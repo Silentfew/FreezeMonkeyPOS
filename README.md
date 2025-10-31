@@ -1,88 +1,61 @@
-# POS and Inventory Management System
+# FreezeMonkey POS
 
-This is a Point of Sale (POS) and Inventory Management System built with Next.js, React, and Supabase. It provides a comprehensive solution for managing products, customers, orders, and transactions in a retail or small business setting.
-
-As a developer with extensive experience in creating similar applications, this project represents the culmination of years of expertise in building POS systems. Of course, in the beginning the project seem a little raw, but with time and hopefully with the help of the community, it will become a robust and feature-rich solution for businesses of all sizes.
-
-This particular iteration embraces the spirit of open-source development, making it freely available for the community to use, modify, and improve upon.
+FreezeMonkey POS is a lightweight, touch-friendly point of sale interface built with Next.js and React. It focuses on a single-screen workflow for managing a catalog of products in small retail or hospitality environments.
 
 ## Features
 
-- **Dashboard**: Overview of key metrics and charts
-- **Products Management**: Add, edit, delete, and view products
-- **Customer Management**: Manage customer information and status
-- **Order Management**: Create and manage orders
-- **Point of Sale (POS)**: Quick and easy sales processing
-- **User Authentication**: Secure login system
+- 🔒 **PIN Login** – Protect access to the register with a configurable PIN.
+- 🧾 **Product Catalog** – Load products from a local JSON file on the server.
+- ➕ **Add Products** – Create new items directly from the POS screen.
+- ✏️ **Edit Products** – Update product details with one tap.
+- 🗑️ **Delete Products** – Remove products and keep your catalog tidy.
+- 💾 **Persistent Storage** – Changes are written back to `data/products.json`.
+- 💸 **Price Formatting** – All prices render with two decimal places.
+- 📱 **Touch Ready UI** – Large, high-contrast controls for tablet usage.
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL database)
-- **State Management**: React Hooks
-- **UI Components**: Custom components and Shadcn UI
-- **Charts**: Recharts
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Data Storage**: JSON file persisted on the server filesystem
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies:
-   ```
+1. Install dependencies:
+   ```bash
    npm install
    ```
-3. Set up your Supabase project and add the necessary environment variables:
-   - Create a `.env.local` file in the root of your project
-   - Add the following lines to the file:
-     ```
-     NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-     ```
-   - Replace `your_supabase_project_url` and `your_supabase_anon_key` with your actual Supabase project URL and anon key
-4. Run the development server:
+2. (Optional) Define a custom PIN by creating a `.env.local` file:
+   ```env
+   POS_LOGIN_PIN=2468
    ```
+   If not provided, the app defaults to `1234`.
+3. Start the development server:
+   ```bash
    npm run dev
    ```
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Visit [http://localhost:3000](http://localhost:3000) and sign in with your PIN.
+
+## Data Persistence
+
+- Product records live in `data/products.json`.
+- Any add, edit, or delete action immediately updates this file.
+- You can seed your own catalog by editing the JSON before starting the app.
 
 ## Project Structure
 
-- `src/app/`: Next.js app router pages
-- `src/components/`: Reusable React components
-- `src/lib/`: Utility functions and Supabase client
-- `schema.sql`: Database schema
-
-## Key Pages
-
-- `/admin`: Main dashboard
-- `/admin/products`: Product management
-- `/admin/customers`: Customer management
-- `/admin/orders`: Order management
-- `/admin/pos`: Point of Sale interface
-
-## Database Schema
-
-The project uses a PostgreSQL database with the following main tables:
-
-- `products`: Store product information
-- `customers`: Customer details
-- `orders`: Order information
-- `order_items`: Items within each order
-- `transactions`: Financial transactions
-- `payment_methods`: Available payment methods
-
-For the complete schema, refer to `schema.sql`.
+- `src/app/` – App Router pages and API routes.
+- `src/lib/` – File persistence helpers.
+- `data/products.json` – Product storage.
 
 ## Authentication
 
-User authentication is handled through Supabase. The login page is available at `/login`.
-
-## Error Handling
-
-A basic error page is implemented at `/error` to handle and display any errors that occur during runtime.
+The `/login` screen validates PINs through the `/api/session` route. A successful login issues an HTTP-only cookie which gates all API access through middleware.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Pull requests and ideas are welcome! Feel free to open an issue or submit improvements.
 
 ## License
 

@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "name": "Espresso",
+    "description": "Rich and bold espresso shot",
+    "price": 2.5,
+    "inStock": 40,
+    "category": "Beverages"
+  },
+  {
+    "id": 2,
+    "name": "Croissant",
+    "description": "Flaky butter croissant",
+    "price": 3.25,
+    "inStock": 24,
+    "category": "Bakery"
+  },
+  {
+    "id": 3,
+    "name": "Iced Latte",
+    "description": "Chilled latte with milk and espresso",
+    "price": 4.5,
+    "inStock": 32,
+    "category": "Beverages"
+  }
+]

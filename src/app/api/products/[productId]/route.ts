@@ -1,84 +1,83 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { deleteProduct, updateProduct } from "@/lib/products-store";
+
+function isAuthenticated(): boolean {
+  return Boolean(cookies().get("pos_session")?.value);
+}
 
 export async function PUT(
   request: Request,
-  { params }: { params: { productId: string, orderId: string } }
+  { params }: { params: { productId: string } }
 ) {
-  const supabase = createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!isAuthenticated()) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const updatedProduct = await request.json();
-  const productId = params.productId;
-  const orderId = params.orderId;
-
-  const { data, error } = await supabase
-    .from('products')
-    .update({ ...updatedProduct, user_uid: user.id })
-    .eq('id', productId)
-    .eq('user_uid', user.id)
-    .select()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  const id = Number.parseInt(params.productId, 10);
+  if (Number.isNaN(id)) {
+    return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
   }
 
-  if (data.length === 0) {
-    return NextResponse.json({ error: 'Product not found or not authorized' }, { status: 404 })
+  try {
+    const body = await request.json();
+    const updates: Partial<{ name: string; description: string; category: string; price: number; inStock: number }> = {};
+
+    if (typeof body.name === "string") {
+      updates.name = body.name.trim();
+    }
+    if (typeof body.description === "string") {
+      updates.description = body.description.trim();
+    }
+    if (typeof body.category === "string") {
+      updates.category = body.category.trim();
+    }
+    if (body.price !== undefined) {
+      const priceValue = Number.parseFloat(body.price);
+      if (!Number.isNaN(priceValue)) {
+        updates.price = priceValue;
+      }
+    }
+    if (body.inStock !== undefined) {
+      const stockValue = Number.parseInt(body.inStock, 10);
+      if (!Number.isNaN(stockValue)) {
+        updates.inStock = stockValue;
+      }
+    }
+
+    const updated = await updateProduct(id, updates);
+    if (!updated) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("Failed to update product", error);
+    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
-
-  const orderUpdate = await supabase
-    .from('orders')
-    .update({ ...updatedProduct, user_uid: user.id })
-    .eq('id', orderId)
-    .eq('user_uid', user.id)
-
-  if (orderUpdate.error) {
-    return NextResponse.json({ error: orderUpdate.error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data[0])
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { productId: string, orderId: string } }
+  { params }: { params: { productId: string } }
 ) {
-  const supabase = createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!isAuthenticated()) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const productId = params.productId;
-  const orderId = params.orderId;
-
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', productId)
-    .eq('user_uid', user.id)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  const id = Number.parseInt(params.productId, 10);
+  if (Number.isNaN(id)) {
+    return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
   }
 
-  const orderDelete = await supabase
-    .from('orders')
-    .delete()
-    .eq('id', orderId)
-    .eq('user_uid', user.id)
-
-  if (orderDelete.error) {
-    return NextResponse.json({ error: orderDelete.error.message }, { status: 500 })
+  try {
+    const removed = await deleteProduct(id);
+    if (!removed) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete product", error);
+    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
-
-  return NextResponse.json({ message: 'Product and Order deleted successfully' })
 }
