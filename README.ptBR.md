@@ -1,89 +1,62 @@
-# Sistema de PDV e Gerenciamento de Inventário
+# FreezeMonkey POS
 
-Este é um Sistema de Ponto de Venda (PDV) e Gerenciamento de Inventário construído com Next.js, React e Supabase. Ele oferece uma solução abrangente para gerenciar produtos, clientes, pedidos e transações em um ambiente de varejo ou pequenos negócios.
-
-Como desenvolvedor com ampla experiência na criação de aplicativos semelhantes, este projeto representa a culminação de anos de expertise na construção de sistemas PDV. É claro que, no início, o projeto pode parecer um pouco bruto, mas com o tempo e, espero, com a ajuda da comunidade, ele se tornará uma solução robusta e rica em recursos para empresas de todos os tamanhos.
-
-Esta iteração específica abraça o espírito do desenvolvimento de código aberto, tornando-se livremente disponível para a comunidade usar, modificar e melhorar.
+FreezeMonkey POS é uma interface de ponto de venda leve e otimizada para toque construída com Next.js e React. Ela concentra o fluxo de trabalho em uma única tela para gerenciar o catálogo de produtos em pequenos comércios ou cafeterias.
 
 ## Funcionalidades
 
-- **Dashboard**: Visão geral de métricas e gráficos principais
-- **Gerenciamento de Produtos**: Adicionar, editar, excluir e visualizar produtos
-- **Gerenciamento de Clientes**: Gerenciar informações e status dos clientes
-- **Gerenciamento de Pedidos**: Criar e gerenciar pedidos
-- **Ponto de Venda (PDV)**: Processamento de vendas rápido e fácil
-- **Autenticação de Usuários**: Sistema de login seguro
+- 🔒 **Login por PIN** – Proteja o acesso ao caixa com um PIN configurável.
+- 🧾 **Catálogo de Produtos** – Carrega os produtos de um arquivo JSON no servidor.
+- ➕ **Adicionar Produtos** – Crie novos itens diretamente na tela principal.
+- ✏️ **Editar Produtos** – Atualize as informações com um toque.
+- 🗑️ **Excluir Produtos** – Remova itens e mantenha o catálogo organizado.
+- 💾 **Persistência** – As alterações são gravadas em `data/products.json`.
+- 💸 **Preços com Duas Casas** – Todos os valores aparecem com duas casas decimais.
+- 📱 **Interface Touch** – Controles grandes e de alto contraste para tablets.
 
-## Tecnologias Utilizadas
+## Stack Tecnológica
 
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Backend**: Supabase (banco de dados PostgreSQL)
-- **Gerenciamento de Estado**: React Hooks
-- **Componentes de UI**: Componentes personalizados e Shadcn UI
-- **Gráficos**: Recharts
+- **Framework**: Next.js 14 (App Router)
+- **Linguagem**: TypeScript
+- **Estilização**: Tailwind CSS
+- **Armazenamento de Dados**: arquivo JSON persistido no servidor
 
-## Primeiros Passos
+## Como executar
 
-1. Clone o repositório
-2. Instale as dependências:
-   ```
+1. Instale as dependências:
+   ```bash
    npm install
    ```
-3. Configure seu projeto Supabase e adicione as variáveis de ambiente necessárias:
-   - Crie um arquivo `.env.local` na raiz do seu projeto
-   - Adicione as seguintes linhas ao arquivo:
-     ```
-     NEXT_PUBLIC_SUPABASE_URL=seu_url_do_projeto_supabase
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
-     ```
-   - Substitua `seu_url_do_projeto_supabase` e `sua_chave_anon_do_supabase` pelo URL do seu projeto Supabase e chave anônima reais
-4. Execute o servidor de desenvolvimento:
+2. (Opcional) Defina um PIN personalizado criando um arquivo `.env.local`:
+   ```env
+   POS_LOGIN_PIN=2468
    ```
+   Se não definido, o aplicativo usa `1234` por padrão.
+3. Inicie o servidor de desenvolvimento:
+   ```bash
    npm run dev
    ```
-5. Abra [http://localhost:3000](http://localhost:3000) no seu navegador
+4. Acesse [http://localhost:3000](http://localhost:3000) e entre com o seu PIN.
+
+## Persistência de Dados
+
+- Os produtos ficam em `data/products.json`.
+- Toda inclusão, edição ou exclusão atualiza esse arquivo imediatamente.
+- Você pode popular o catálogo editando o JSON antes de iniciar o app.
 
 ## Estrutura do Projeto
 
-- `src/app/`: Páginas do roteador Next.js
-- `src/components/`: Componentes reutilizáveis do React
-- `src/lib/`: Funções utilitárias e cliente Supabase
-- `schema.sql`: Esquema do banco de dados
-
-## Principais Páginas
-
-- `/admin`: Dashboard principal
-- `/admin/products`: Gerenciamento de produtos
-- `/admin/customers`: Gerenciamento de clientes
-- `/admin/orders`: Gerenciamento de pedidos
-- `/admin/pos`: Interface do Ponto de Venda
-
-## Esquema do Banco de Dados
-
-O projeto utiliza um banco de dados PostgreSQL com as seguintes tabelas principais:
-
-- `products`: Armazena informações dos produtos
-- `customers`: Detalhes dos clientes
-- `orders`: Informações dos pedidos
-- `order_items`: Itens dentro de cada pedido
-- `transactions`: Transações financeiras
-- `payment_methods`: Métodos de pagamento disponíveis
-
-Para o esquema completo, consulte `schema.sql`.
+- `src/app/` – Páginas e rotas API do App Router.
+- `src/lib/` – Utilitários para persistência em arquivo.
+- `data/products.json` – Armazenamento dos produtos.
 
 ## Autenticação
 
-A autenticação de usuários é realizada através do Supabase. A página de login está disponível em `/login`.
+A tela `/login` valida o PIN via rota `/api/session`. Após o login, um cookie HTTP-only é enviado e bloqueia o acesso às APIs para usuários não autenticados.
 
-## Tratamento de Erros
+## Contribuições
 
-Uma página básica de erro é implementada em `/error` para lidar e exibir quaisquer erros que ocorram durante a execução.
-
-## Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para enviar um Pull Request.
+Sugestões e melhorias são bem-vindas! Abra uma issue ou envie um pull request.
 
 ## Licença
 
-Este projeto é de código aberto e está disponível sob a [Licença MIT](LICENSE).
+Este projeto é open source e está disponível sob a [Licença MIT](LICENSE).

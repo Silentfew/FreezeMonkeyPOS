@@ -1,52 +1,77 @@
-import { signup, login } from "./actions";
-/**
- * v0 by Vercel.
- * @see https://v0.dev/t/y71wwxpKfsO
- * Documentation: https://v0.dev/docs#integrating-generated-code-into-your-nextjs-app
- */
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { MountainIcon } from "lucide-react";
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+
+      if (!response.ok) {
+        const { error: message } = await response.json();
+        setError(message ?? "Unable to sign in");
+        return;
+      }
+
+      router.push("/");
+    } catch (requestError) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center space-y-2">
-          <MountainIcon className="h-10 w-10" />
-          <h2 className="text-2xl font-bold">Welcome back</h2>
-          <p className="text-muted-foreground">
-            Enter your email and password to sign in.
-          </p>
-        </div>
-        <Card>
-          <form>
-            <CardContent className="space-y-4 mt-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email"  type="email" placeholder="name@example.com" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password"  type="password" />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Link
-                href="#"
-                className="text-sm text-muted-foreground"
-                prefetch={false}
-              >
-                Forgot password?
-              </Link>
-              <Button formAction={login}>Log in</Button>
-              <Button formAction={signup}>Sign up</Button>
-            </CardFooter>
-          </form>
-        </Card>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-900 p-6">
+      <div className="w-full max-w-md rounded-3xl bg-slate-800 p-10 shadow-2xl">
+        <h1 className="text-center text-3xl font-semibold text-white">FreezeMonkey POS</h1>
+        <p className="mt-2 text-center text-slate-300">Enter your access PIN to continue.</p>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="pin" className="block text-lg font-medium text-slate-200">
+              4-Digit PIN
+            </label>
+            <input
+              id="pin"
+              name="pin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={6}
+              className="mt-3 w-full rounded-2xl border border-slate-600 bg-slate-900 p-4 text-center text-3xl tracking-widest text-white focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              value={pin}
+              onChange={(event) => setPin(event.target.value)}
+              disabled={isSubmitting}
+              autoFocus
+            />
+          </div>
+          {error ? (
+            <p className="rounded-xl bg-red-500/20 p-3 text-center text-sm font-semibold text-red-200">
+              {error}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-cyan-500 p-5 text-2xl font-bold uppercase tracking-wider text-white transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSubmitting || pin.trim().length === 0}
+          >
+            {isSubmitting ? "Checking..." : "Unlock"}
+          </button>
+        </form>
       </div>
     </div>
   );
