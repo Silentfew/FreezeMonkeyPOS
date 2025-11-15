@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Hot Drinks",
+    "swatch": "#2E9DDB",
+    "active": true,
+    "sortOrder": 0
+  },
+  {
+    "id": 2,
+    "name": "Cold Drinks",
+    "swatch": "#003B57",
+    "active": true,
+    "sortOrder": 1
+  },
+  {
+    "id": 3,
+    "name": "Bakery",
+    "swatch": "#F2F7FB",
+    "active": true,
+    "sortOrder": 2
+  }
+]
