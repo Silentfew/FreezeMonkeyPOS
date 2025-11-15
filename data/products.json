@@ -5,7 +5,9 @@
     "description": "Rich and bold espresso shot",
     "price": 2.5,
     "inStock": 40,
-    "category": "Beverages"
+    "categoryId": 1,
+    "modifierIds": [1, 3],
+    "active": true
   },
   {
     "id": 2,
@@ -13,7 +15,9 @@
     "description": "Flaky butter croissant",
     "price": 3.25,
     "inStock": 24,
-    "category": "Bakery"
+    "categoryId": 3,
+    "modifierIds": [],
+    "active": true
   },
   {
     "id": 3,
@@ -21,6 +25,8 @@
     "description": "Chilled latte with milk and espresso",
     "price": 4.5,
     "inStock": 32,
-    "category": "Beverages"
+    "categoryId": 2,
+    "modifierIds": [1, 2, 3, 4],
+    "active": true
   }
 ]

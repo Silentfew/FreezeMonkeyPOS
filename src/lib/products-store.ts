@@ -7,7 +7,18 @@ export type Product = {
   description: string;
   price: number;
   inStock: number;
-  category: string;
+  /**
+   * Identifier of the category the product belongs to. When null the product is
+   * considered uncategorised but still selectable from the POS screen.
+   */
+  categoryId: number | null;
+  /**
+   * Modifier identifiers that are available for the product. The modifier
+   * entities are managed by the modifier_manager module.
+   */
+  modifierIds: number[];
+  /** Flag that allows hiding the product from the POS without deleting it. */
+  active: boolean;
 };
 
 const DATA_FILE = path.join(process.cwd(), "data", "products.json");
@@ -27,11 +38,24 @@ async function readFileContents(): Promise<string> {
 
 export async function readProducts(): Promise<Product[]> {
   const raw = await readFileContents();
-  const parsed = JSON.parse(raw) as Product[];
-  return parsed.map((product) => ({
-    ...product,
-    price: Number(product.price),
-    inStock: Number(product.inStock),
+  const parsed = JSON.parse(raw) as Partial<Product>[];
+  return parsed.map((product, index) => ({
+    id: typeof product.id === "number" ? product.id : index + 1,
+    name: product.name ?? "Unnamed Product",
+    description: product.description ?? "",
+    price: Number(product.price ?? 0),
+    inStock: Number(product.inStock ?? 0),
+    categoryId: product.categoryId ?? null,
+    modifierIds: Array.isArray(product.modifierIds)
+      ? Array.from(
+          new Set(
+            product.modifierIds
+              .map((value) => Number(value))
+              .filter((value) => Number.isFinite(value) && !Number.isNaN(value)),
+          ),
+        )
+      : [],
+    active: typeof product.active === "boolean" ? product.active : true,
   }));
 }
 
@@ -48,6 +72,11 @@ export async function addProduct(product: Omit<Product, "id">): Promise<Product>
     id: nextId,
     price: Number(product.price.toFixed(2)),
     inStock: Number(product.inStock),
+    categoryId: product.categoryId ?? null,
+    modifierIds: Array.from(
+      new Set(product.modifierIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))),
+    ),
+    active: product.active,
   };
   products.push(productToStore);
   await writeProducts(products);
@@ -74,6 +103,17 @@ export async function updateProduct(
   }
   if (updates.inStock !== undefined) {
     updated.inStock = Number(updates.inStock);
+  }
+  if (updates.categoryId !== undefined) {
+    updated.categoryId = updates.categoryId ?? null;
+  }
+  if (updates.modifierIds !== undefined) {
+    updated.modifierIds = Array.from(
+      new Set(updates.modifierIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))),
+    );
+  }
+  if (updates.active !== undefined) {
+    updated.active = updates.active;
   }
 
   products[index] = updated;
