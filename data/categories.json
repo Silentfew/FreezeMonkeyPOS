@@ -1,23 +1,8 @@
 [
-  {
-    "id": 1,
-    "name": "Hot Drinks",
-    "swatch": "#2E9DDB",
-    "active": true,
-    "sortOrder": 0
-  },
-  {
-    "id": 2,
-    "name": "Cold Drinks",
-    "swatch": "#003B57",
-    "active": true,
-    "sortOrder": 1
-  },
-  {
-    "id": 3,
-    "name": "Bakery",
-    "swatch": "#F2F7FB",
-    "active": true,
-    "sortOrder": 2
-  }
+  { "id": "1", "name": "Frostborn Line", "order": 1 },
+  { "id": "2", "name": "Frosted Relics", "order": 2 },
+  { "id": "3", "name": "Stormfront Sides", "order": 3 },
+  { "id": "4", "name": "Core Energies", "order": 4 },
+  { "id": "5", "name": "Ancients", "order": 5 },
+  { "id": "6", "name": "Relics", "order": 6 }
 ]

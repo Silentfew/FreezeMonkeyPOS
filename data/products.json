@@ -1,32 +1,16 @@
 [
-  {
-    "id": 1,
-    "name": "Espresso",
-    "description": "Rich and bold espresso shot",
-    "price": 2.5,
-    "inStock": 40,
-    "categoryId": 1,
-    "modifierIds": [1, 3],
-    "active": true
-  },
-  {
-    "id": 2,
-    "name": "Croissant",
-    "description": "Flaky butter croissant",
-    "price": 3.25,
-    "inStock": 24,
-    "categoryId": 3,
-    "modifierIds": [],
-    "active": true
-  },
-  {
-    "id": 3,
-    "name": "Iced Latte",
-    "description": "Chilled latte with milk and espresso",
-    "price": 4.5,
-    "inStock": 32,
-    "categoryId": 2,
-    "modifierIds": [1, 2, 3, 4],
-    "active": true
-  }
+  { "id": "p-101", "name": "Frost Paw Burger", "price": 12.0, "categoryId": "1" },
+  { "id": "p-102", "name": "Frostbite Minis (5 pack)", "price": 10.0, "categoryId": "1" },
+  { "id": "p-201", "name": "Classic Dog", "price": 7.0, "categoryId": "2" },
+  { "id": "p-202", "name": "Pizza Dog", "price": 8.0, "categoryId": "2" },
+  { "id": "p-203", "name": "Red Hot Dog", "price": 10.0, "categoryId": "2" },
+  { "id": "p-301", "name": "Fries (Straight Cut)", "price": 5.0, "categoryId": "3" },
+  { "id": "p-302", "name": "Chili Honey Fries", "price": 7.0, "categoryId": "3" },
+  { "id": "p-303", "name": "Cheesy Weasy Fries", "price": 7.0, "categoryId": "3" },
+  { "id": "p-401", "name": "Slushie 500ml", "price": 5.0, "categoryId": "4" },
+  { "id": "p-402", "name": "Dirty Slush Vanilla", "price": 6.0, "categoryId": "4" },
+  { "id": "p-403", "name": "RedZed Energy Slush", "price": 7.0, "categoryId": "4" },
+  { "id": "p-501", "name": "Ancient Boil-Up Bowl", "price": 12.0, "categoryId": "5" },
+  { "id": "p-601", "name": "Ice Cream Cone", "price": 3.0, "categoryId": "6" },
+  { "id": "p-602", "name": "Frostbite Sundae", "price": 6.0, "categoryId": "6" }
 ]
