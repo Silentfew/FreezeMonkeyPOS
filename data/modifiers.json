@@ -1,34 +1,6 @@
 [
-  {
-    "id": 1,
-    "name": "Extra Shot",
-    "price": 0.75,
-    "category": "Espresso",
-    "type": "add",
-    "active": true
-  },
-  {
-    "id": 2,
-    "name": "Soy Milk",
-    "price": 0.5,
-    "category": "Milk",
-    "type": "add",
-    "active": true
-  },
-  {
-    "id": 3,
-    "name": "No Sugar",
-    "price": 0,
-    "category": "Sweetness",
-    "type": "remove",
-    "active": true
-  },
-  {
-    "id": 4,
-    "name": "Whipped Cream",
-    "price": 0.6,
-    "category": "Toppings",
-    "type": "add",
-    "active": true
-  }
+  { "id": "m-1", "name": "Extra Cheese Sauce", "price": 1.0, "action": "add" },
+  { "id": "m-2", "name": "Iggy’s Hot Sauce", "price": 0.5, "action": "add" },
+  { "id": "m-3", "name": "No Onion", "price": 0.0, "action": "remove" },
+  { "id": "m-4", "name": "No Sauce", "price": 0.0, "action": "remove" }
 ]
