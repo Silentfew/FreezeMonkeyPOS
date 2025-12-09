@@ -30,12 +30,13 @@ import {
 } from "lucide-react";
 
 const pageNames: { [key: string]: string } = {
-  "/admin": "Dashboard",
+  "/admin": "Rift Control",
   "/admin/customers": "Customers",
-  "/admin/products": "Products",
+  "/admin/products": "Rift Control · Menu Relics",
   "/admin/orders": "Orders",
   "/admin/pos": "Point of Sale",
   "/admin/cashier": "Cashier",
+  "/admin/staff": "Rift Control · Keepers & Crew",
 };
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -49,7 +50,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           className="flex items-center gap-2 text-lg font-semibold"
         >
           <Package2Icon className="h-6 w-6" />
-          <span className="sr-only">Admin Panel</span>
+          <span className="sr-only">Rift Control</span>
         </Link>
         <h1 className="text-xl font-bold">{pageNames[pathname]}</h1>
         <div className="relative ml-auto flex-1 md:grow-0">

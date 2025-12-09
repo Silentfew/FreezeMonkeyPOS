@@ -303,13 +303,13 @@ export default function HomePage() {
                 FM
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Freeze Monkey POS</p>
-                <h1 className="text-2xl font-black text-[#E9F9FF]">Stormfront Counter</h1>
+                <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Freeze Monkey POS · Rift Console</p>
+                <h1 className="text-2xl font-black text-[#E9F9FF]">Stormfront Counter · Frostoria Outpost</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}>
-                {offline ? 'Offline mode' : 'Online'}
+                {offline ? 'Rift Link Disrupted (Offline)' : 'Rift Link Stable'}
               </div>
               <label className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-[#E9F9FF]">
                 <input
@@ -318,7 +318,7 @@ export default function HomePage() {
                   checked={taxFree}
                   onChange={(e) => setTaxFree(e.target.checked)}
                 />
-                Tax free
+                Earthrealm Mode (Tax Free)
               </label>
             </div>
           </header>
@@ -393,8 +393,8 @@ export default function HomePage() {
         <aside className="w-full max-w-md space-y-4 rounded-2xl bg-[#0F172A]/80 p-4 shadow-xl ring-1 ring-white/10 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Ticket</p>
-              <h3 className="text-xl font-black text-[#E9F9FF]">Order Summary</h3>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Order Summary</p>
+              <h3 className="text-xl font-black text-[#E9F9FF]">Ticket · Rift Manifest</h3>
             </div>
             {!adminMode && (
               <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export default function HomePage() {
           <div className="space-y-3 overflow-y-auto rounded-xl bg-white/5 p-3 max-h-[55vh]">
             {orderItems.length === 0 && (
               <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-white/10 text-[#E9F9FF]/70">
-                No items yet. Tap a product to start.
+                No energies queued. Tap a relic or ration to begin.
               </div>
             )}
             {orderItems.map((item) => (
@@ -487,22 +487,22 @@ export default function HomePage() {
           </div>
           <div className="space-y-2 rounded-xl bg-white/5 p-4">
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Subtotal</span>
+              <span>Frost Subtotal</span>
               <span>{formatCurrency(totals.subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Tax {taxFree ? '(tax free)' : '(15%)'}</span>
+              <span>Earthrealm Tax {taxFree ? '(tax free)' : '(15%)'}</span>
               <span>{formatCurrency(totals.tax)}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-2 text-lg font-black text-[#FFE561]">
-              <span>Total</span>
+              <span>Stormfront Total</span>
               <span>{formatCurrency(totals.total)}</span>
             </div>
             <button
               type="button"
               className="mt-3 w-full rounded-2xl bg-[#00C2FF] px-4 py-3 text-center text-lg font-black text-[#1E1E1E] shadow-lg hover:scale-[1.01] transition"
             >
-              Charge Customer
+              Deploy Order
             </button>
           </div>
         </aside>

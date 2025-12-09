@@ -29,12 +29,17 @@ export default function LoginPage() {
         });
 
         if (!response.ok) {
-          const { error: message } = await response.json();
-          setError(message ?? "Unable to sign in");
+          await response.json();
+          setError(
+            "Access Denied – That Frost Code doesn’t match any registered keeper.",
+          );
           return;
         }
 
-        setSuccess("PIN accepted. Redirecting to POS...");
+        const keeperName = "Keeper";
+        setSuccess(
+          `Access Granted – Welcome back, ${keeperName}. Stormfront is standing by.`,
+        );
         setTimeout(() => router.push("/pos"), 500);
       } catch (requestError) {
         setError("Unable to reach the server. Please try again.");
@@ -64,14 +69,14 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-900 p-6">
       <div className="w-full max-w-md rounded-3xl bg-slate-800 p-10 shadow-2xl">
-        <h1 className="text-center text-3xl font-semibold text-white">FreezeMonkey POS</h1>
-        <p className="mt-2 text-center text-slate-300">Enter your access PIN to continue.</p>
+        <h1 className="text-center text-3xl font-semibold text-white">Rift Access · Frostoria Systems</h1>
+        <p className="mt-2 text-center text-slate-300">Enter your Frost Code to unlock Stormfront Counter.</p>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <p className="block text-lg font-medium text-slate-200">4-Digit PIN</p>
+            <p className="block text-lg font-medium text-slate-200">Frost Code</p>
             <div
               className="mt-3 w-full rounded-2xl border-2 border-cyan-400/60 bg-slate-900 p-4 text-center text-3xl font-semibold tracking-widest text-white"
-              aria-label="Entered PIN"
+              aria-label="Entered Frost Code"
               role="presentation"
             >
               {maskedPin}
