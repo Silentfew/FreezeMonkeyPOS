@@ -212,13 +212,6 @@ export default function PosPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => router.push('/admin/products')}
-                className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
-              >
-                Rift Control
-              </button>
-              <button
-                type="button"
                 onClick={isFullscreen ? exitFullscreen : enterFullscreen}
                 className="rounded-full bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#2ad2ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00C2FF]"
               >
@@ -301,6 +294,13 @@ export default function PosPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Order Summary</p>
               <h3 className="text-xl font-black text-[#E9F9FF]">Ticket · Rift Manifest</h3>
             </div>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/products')}
+              className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
+            >
+              Rift Control
+            </button>
           </div>
 
           <div className="space-y-3 overflow-y-auto rounded-xl bg-white/5 p-3 max-h-[55vh]">
