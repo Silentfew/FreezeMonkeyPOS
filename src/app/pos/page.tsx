@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchCategories, Category } from '@/lib/categories-store';
 import { fetchProducts, Product } from '@/lib/products-store';
@@ -33,6 +33,7 @@ function formatCurrencyFromCents(amountCents: number) {
 }
 
 export default function PosPage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -186,12 +187,13 @@ export default function PosPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Link
-                href="/admin/products"
+              <button
+                type="button"
+                onClick={() => router.push('/admin/products')}
                 className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffeb85]"
               >
                 Rift Control
-              </Link>
+              </button>
               <div
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}
               >
