@@ -4,13 +4,14 @@ import {
   calculateItemTotal,
   calculateTotals,
 } from '@/lib/order_manager';
-import { Order, OrderItem, OrderTotals } from '../models/order';
+import { Order, OrderItem, OrderTotals, Payment } from '../models/order';
 
 export interface OrderDraft {
   items: DraftOrderItem[];
   taxFree?: boolean;
   note?: string;
   taxRate?: number;
+  payments?: Payment[] | { type?: string; amountCents?: number; amount?: number }[];
 }
 
 interface BuildContext {
@@ -43,6 +44,20 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
   const items = buildItems(draft.items);
   const totals = buildTotals(draft.items, taxFree, draft.taxRate);
 
+  const payments =
+    Array.isArray(draft.payments) && draft.payments.length > 0
+      ? draft.payments.map((p) => {
+          const amountCents =
+            typeof (p as any).amountCents === 'number'
+              ? (p as any).amountCents
+              : Math.round(((p as any).amount ?? 0) * 100);
+          return {
+            type: (p as any).type ?? 'OTHER',
+            amountCents,
+          };
+        })
+      : undefined;
+
   return {
     orderNumber: context.orderNumber,
     createdAt,
@@ -50,5 +65,6 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
     totals,
     taxFree,
     note: draft.note,
+    payments,
   };
 }

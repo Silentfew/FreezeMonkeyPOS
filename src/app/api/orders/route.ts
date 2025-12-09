@@ -5,11 +5,13 @@ import { OrderDraft } from '@/domain/orders/createOrderFromDraft';
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
+    const payments = Array.isArray(payload?.payments) ? payload.payments : undefined;
     const draft: OrderDraft = {
       items: Array.isArray(payload?.items) ? payload.items : [],
       taxFree: Boolean(payload?.taxFree),
       note: typeof payload?.note === 'string' ? payload.note : undefined,
       taxRate: typeof payload?.taxRate === 'number' ? payload.taxRate : undefined,
+      payments,
     };
 
     if (!draft.items.length) {
