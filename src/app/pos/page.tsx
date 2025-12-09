@@ -26,6 +26,8 @@ type PaymentType = 'CASH' | 'CARD' | 'OTHER';
 type PaymentDraft = {
   type: PaymentType;
   amountCents: number;
+  givenCents?: number;
+  changeCents?: number;
 };
 
 type DraftOrderItem = {
@@ -43,6 +45,7 @@ type DraftOrderPayload = {
   note?: string;
   taxRate?: number;
   payments?: PaymentDraft[];
+  discountCents?: number;
 };
 
 type PosProduct = Product & { basePriceCents?: number };
@@ -64,6 +67,9 @@ export default function PosPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [paymentType, setPaymentType] = useState<PaymentType>('CASH');
+  const [cashGiven, setCashGiven] = useState<string>('');
+  const [discountMode, setDiscountMode] = useState<'NONE' | 'PERCENT' | 'FLAT'>('NONE');
+  const [discountInput, setDiscountInput] = useState<string>('');
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -119,7 +125,52 @@ export default function PosPage() {
     [cart],
   );
   const taxCents = 0;
-  const totalCents = subtotalCents + taxCents;
+
+  const { discountCents, discountedSubtotalCents, totalCents } = useMemo(() => {
+    let computedDiscountCents = 0;
+
+    if (discountMode !== 'NONE' && discountInput.trim() !== '') {
+      const val = Number(discountInput);
+      if (!Number.isNaN(val) && val > 0) {
+        if (discountMode === 'PERCENT') {
+          computedDiscountCents = Math.round((subtotalCents * val) / 100);
+        } else if (discountMode === 'FLAT') {
+          computedDiscountCents = Math.round(val * 100);
+        }
+      }
+    }
+
+    if (computedDiscountCents > subtotalCents) {
+      computedDiscountCents = subtotalCents;
+    }
+
+    const discountedSubtotal = subtotalCents - computedDiscountCents;
+    const total = discountedSubtotal + taxCents;
+
+    return {
+      discountCents: computedDiscountCents,
+      discountedSubtotalCents: discountedSubtotal,
+      totalCents: total,
+    };
+  }, [discountInput, discountMode, subtotalCents, taxCents]);
+
+  const { givenCents, changeCents } = useMemo(() => {
+    let computedGiven: number | undefined;
+    let computedChange: number | undefined;
+
+    if (paymentType === 'CASH' && cashGiven.trim() !== '') {
+      const parsed = Number(cashGiven);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        computedGiven = Math.round(parsed * 100);
+        computedChange = computedGiven - totalCents;
+        if (computedChange < 0) {
+          computedChange = 0;
+        }
+      }
+    }
+
+    return { givenCents: computedGiven, changeCents: computedChange };
+  }, [cashGiven, paymentType, totalCents]);
 
   const handleAddToCart = (product: PosProduct) => {
     setStatusMessage(null);
@@ -172,7 +223,10 @@ export default function PosPage() {
     setLastOrderId(null);
 
     try {
-      const totalCents = subtotalCents + taxCents;
+      let paymentChangeCents = changeCents;
+      if (typeof paymentChangeCents === 'number' && paymentChangeCents < 0) {
+        paymentChangeCents = 0;
+      }
       const payload: DraftOrderPayload = {
         items: cart.map((item) => ({
           productId: item.productId,
@@ -187,8 +241,11 @@ export default function PosPage() {
           {
             type: paymentType,
             amountCents: totalCents,
+            givenCents,
+            changeCents: paymentChangeCents,
           },
         ],
+        discountCents: discountCents > 0 ? discountCents : undefined,
       };
 
       const response = await fetch('/api/orders', {
@@ -210,7 +267,14 @@ export default function PosPage() {
           ? `Rift Deployed – Ticket ${orderId} logged in the Codex.`
           : 'Rift Deployed – Ticket logged in the Codex.',
       );
+      if (orderId) {
+        window.open(`/receipt/${orderId}`, '_blank');
+      }
       setCart([]);
+      setCashGiven('');
+      setPaymentType('CASH');
+      setDiscountMode('NONE');
+      setDiscountInput('');
     } catch (error) {
       console.error(error);
       setStatusMessage('Rift Jammed – Network error while deploying.');
@@ -400,7 +464,12 @@ export default function PosPage() {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setPaymentType(type)}
+                    onClick={() => {
+                      setPaymentType(type);
+                      if (type !== 'CASH') {
+                        setCashGiven('');
+                      }
+                    }}
                     className={
                       'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
                       (paymentType === type
@@ -412,11 +481,113 @@ export default function PosPage() {
                   </button>
                 ))}
               </div>
+
+              {paymentType === 'CASH' && (
+                <div className="mt-2">
+                  <div className="text-[10px] font-semibold text-[#A0B4D8]">Cash given (NZD)</div>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    className="mt-1 w-full rounded-md bg-white/5 px-2 py-1 text-xs text-[#E9F9FF] outline-none ring-1 ring-white/10"
+                    value={cashGiven}
+                    onChange={(e) => setCashGiven(e.target.value)}
+                    placeholder="e.g. 20.00"
+                  />
+                </div>
+              )}
+
+              {paymentType === 'CASH' && typeof changeCents === 'number' && changeCents > 0 && (
+                <div className="mt-1 text-xs text-[#E9F9FF]">
+                  Change: <span className="font-semibold">${(changeCents / 100).toFixed(2)}</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Frost Subtotal</span>
-              <span>{formatCurrencyFromCents(subtotalCents)}</span>
+
+            <div className="mt-4 space-y-2">
+              <div className="text-xs font-semibold text-[#A0B4D8]">Discount</div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountMode('NONE');
+                    setDiscountInput('');
+                  }}
+                  className={
+                    'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
+                    (discountMode === 'NONE'
+                      ? 'bg-white/10 text-[#E9F9FF]'
+                      : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
+                  }
+                >
+                  None
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountMode('PERCENT');
+                    setDiscountInput('');
+                  }}
+                  className={
+                    'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
+                    (discountMode === 'PERCENT'
+                      ? 'bg-[#FFE561] text-[#0b1222]'
+                      : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
+                  }
+                >
+                  % Off
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountMode('FLAT');
+                    setDiscountInput('');
+                  }}
+                  className={
+                    'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
+                    (discountMode === 'FLAT'
+                      ? 'bg-[#FFE561] text-[#0b1222]'
+                      : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
+                  }
+                >
+                  $ Off
+                </button>
+              </div>
+
+              {discountMode !== 'NONE' && (
+                <div>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    className="mt-2 w-full rounded-md bg-white/5 px-2 py-1 text-xs text-[#E9F9FF] outline-none ring-1 ring-white/10"
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    placeholder={discountMode === 'PERCENT' ? 'Percent e.g. 10' : 'Dollars e.g. 5'}
+                  />
+                </div>
+              )}
             </div>
+
+            <div className="mt-2 space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-[#A0B4D8]">Subtotal</span>
+                <span>${(subtotalCents / 100).toFixed(2)}</span>
+              </div>
+              {discountCents > 0 && (
+                <div className="flex justify-between text-[#FFD1D1]">
+                  <span>Discount</span>
+                  <span>- ${(-discountCents / 100).toFixed(2).replace('-', '')}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[#A0B4D8]">Taxable after discount</span>
+                <span>${(discountedSubtotalCents / 100).toFixed(2)}</span>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
               <span>Earthrealm Tax</span>
               <span>{formatCurrencyFromCents(taxCents)}</span>

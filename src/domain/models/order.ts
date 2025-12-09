@@ -5,6 +5,8 @@ export type PaymentType = 'CASH' | 'CARD' | 'OTHER';
 export interface Payment {
   type: PaymentType | string;
   amountCents: number;
+  givenCents?: number;
+  changeCents?: number;
 }
 
 export interface OrderItem {
@@ -30,4 +32,5 @@ export interface Order {
   taxFree: boolean;
   note?: string;
   payments?: Payment[];
+  discountCents?: number;
 }

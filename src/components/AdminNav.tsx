@@ -7,6 +7,7 @@ const links = [
   { href: '/admin/products', label: 'Products' },
   { href: '/admin/staff', label: 'Staff' },
   { href: '/admin/reports/tax-weekly', label: 'Weekly Tax' },
+  { href: '/admin/reports/daily-closeout', label: 'Daily Closeout' },
 ];
 
 export function AdminNav() {
