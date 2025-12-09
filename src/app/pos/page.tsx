@@ -190,7 +190,7 @@ export default function PosPage() {
               <button
                 type="button"
                 onClick={() => router.push('/admin/products')}
-                className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffeb85]"
+                className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
               >
                 Rift Control
               </button>
