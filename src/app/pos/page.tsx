@@ -42,6 +42,7 @@ export default function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<StatusMessage>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -78,6 +79,19 @@ export default function PosPage() {
 
     loadProducts();
   }, [selectedCategoryId]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    handleFullscreenChange();
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const subtotalCents = useMemo(
     () => cart.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0),
@@ -172,6 +186,15 @@ export default function PosPage() {
     }
   };
 
+  const enterFullscreen = async () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) await el.requestFullscreen();
+  };
+
+  const exitFullscreen = async () => {
+    if (document.exitFullscreen) await document.exitFullscreen();
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6 lg:flex-row">
@@ -193,6 +216,13 @@ export default function PosPage() {
                 className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
               >
                 Rift Control
+              </button>
+              <button
+                type="button"
+                onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+                className="rounded-full bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#2ad2ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00C2FF]"
+              >
+                {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
               </button>
               <div
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}
