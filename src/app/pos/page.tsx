@@ -54,6 +54,214 @@ function formatCurrencyFromCents(amountCents: number) {
   return `$${(amountCents / 100).toFixed(2)}`;
 }
 
+interface PaymentOverlayProps {
+  isOpen: boolean;
+  onClose: () => void;
+  totalCents: number;
+  discountedSubtotalCents: number;
+  taxCents: number;
+  paymentType: PaymentType;
+  setPaymentType: (type: PaymentType) => void;
+  cashGiven: string;
+  setCashGiven: (val: string) => void;
+  onCompleteSale: () => void;
+  isSubmitting: boolean;
+}
+
+function PaymentOverlay({
+  isOpen,
+  onClose,
+  totalCents,
+  discountedSubtotalCents,
+  taxCents,
+  paymentType,
+  setPaymentType,
+  cashGiven,
+  setCashGiven,
+  onCompleteSale,
+  isSubmitting,
+}: PaymentOverlayProps) {
+  const { givenCents, changeCents } = useMemo(() => {
+    if (paymentType !== 'CASH' || cashGiven.trim() === '') {
+      return { givenCents: undefined, changeCents: undefined };
+    }
+
+    const parsed = Number(cashGiven);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      return { givenCents: undefined, changeCents: undefined };
+    }
+
+    const computedGiven = Math.round(parsed * 100);
+    const computedChange = Math.max(computedGiven - totalCents, 0);
+    return { givenCents: computedGiven, changeCents: computedChange };
+  }, [cashGiven, paymentType, totalCents]);
+
+  const handleDigit = (digit: string) => {
+    setCashGiven((prev) => {
+      const next = prev || '';
+      if (digit === '.') {
+        if (next.includes('.')) return next;
+        if (next === '') return '0.';
+      }
+      return next + digit;
+    });
+  };
+
+  const handleBackspace = () => {
+    setCashGiven((prev) => prev.slice(0, -1));
+  };
+
+  const handleClear = () => setCashGiven('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+      <div className="relative flex h-full w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-[#0B1222] shadow-2xl ring-1 ring-white/10">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#E9F9FF]/60">Payment</p>
+            <h2 className="text-2xl font-black text-[#E9F9FF]">Rift Checkout</h2>
+            <p className="text-sm text-[#A0B4D8]">Amount due: {formatCurrencyFromCents(totalCents)}</p>
+            <p className="text-xs text-[#A0B4D8]">Taxable: {formatCurrencyFromCents(discountedSubtotalCents)} · GST: {formatCurrencyFromCents(taxCents)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white hover:bg-white/20"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="grid flex-1 grid-cols-1 gap-6 overflow-y-auto p-6 md:grid-cols-2">
+          <div className="space-y-3">
+            <div className="text-xs font-semibold text-[#A0B4D8]">Select tender</div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['CASH', 'CARD', 'OTHER'] as PaymentType[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => {
+                    setPaymentType(type);
+                    if (type !== 'CASH') {
+                      setCashGiven('');
+                    }
+                  }}
+                  className={
+                    'rounded-xl px-4 py-3 text-lg font-black transition ' +
+                    (paymentType === type
+                      ? 'bg-[#FFE561] text-[#0b1222]'
+                      : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
+                  }
+                >
+                  {type === 'CASH' ? 'Cash' : type === 'CARD' ? 'Card / EFTPOS' : 'Other'}
+                </button>
+              ))}
+            </div>
+
+            {paymentType === 'CARD' && (
+              <div className="rounded-2xl bg-white/5 p-4 text-sm text-[#E9F9FF]/80">
+                Tap when EFTPOS is approved.
+              </div>
+            )}
+
+            {paymentType === 'OTHER' && (
+              <div className="rounded-2xl bg-white/5 p-4 text-sm text-[#E9F9FF]/80">
+                Confirm alternative tender (voucher, IOU, etc.).
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {paymentType === 'CASH' && (
+              <div className="rounded-2xl bg-white/5 p-4">
+                <div className="mb-3 flex items-center justify-between text-xs text-[#A0B4D8]">
+                  <span>Cash given</span>
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold text-white hover:bg-white/20"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="mb-4 rounded-xl bg-black/40 px-4 py-3 text-center text-3xl font-black text-[#FFE561]">
+                  {cashGiven === '' ? '$0.00' : `$${cashGiven}`}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      onClick={() => handleDigit(digit)}
+                      className="rounded-xl bg-[#111827] px-4 py-3 text-2xl font-black text-[#E9F9FF] shadow hover:bg-[#1c2741]"
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                  {['.', '0', '⌫'].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      onClick={() => (digit === '⌫' ? handleBackspace() : handleDigit(digit))}
+                      className="rounded-xl bg-[#111827] px-4 py-3 text-2xl font-black text-[#E9F9FF] shadow hover:bg-[#1c2741]"
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 space-y-1 text-sm text-[#E9F9FF]/80">
+                  <div className="flex justify-between">
+                    <span>Cash entered</span>
+                    <span>{givenCents ? formatCurrencyFromCents(givenCents) : '$0.00'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Change</span>
+                    <span>
+                      {changeCents !== undefined
+                        ? formatCurrencyFromCents(changeCents)
+                        : '$0.00'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(paymentType === 'CARD' || paymentType === 'OTHER') && (
+              <div className="rounded-2xl bg-white/5 p-4 text-sm text-[#E9F9FF]/80">
+                <p className="text-lg font-black text-[#E9F9FF]">{formatCurrencyFromCents(totalCents)}</p>
+                <p>Confirm payment to complete the sale.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-white/10 bg-[#0F172A] px-6 py-4">
+          <div className="text-sm text-[#E9F9FF]/70">Ensure tender is confirmed before completing.</div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white hover:bg-white/20"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onCompleteSale}
+              disabled={isSubmitting}
+              className="rounded-xl bg-[#00C2FF] px-6 py-3 text-lg font-black text-[#0b1222] shadow-lg transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? 'Deploying...' : 'Complete Sale'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PosPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -66,6 +274,7 @@ export default function PosPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<PaymentType>('CASH');
   const [cashGiven, setCashGiven] = useState<string>('');
   const [discountMode, setDiscountMode] = useState<'NONE' | 'PERCENT' | 'FLAT'>('NONE');
@@ -212,7 +421,30 @@ export default function PosPage() {
     );
   };
 
-  const handleCharge = async () => {
+  const adjustDiscountValue = (delta: number) => {
+    if (discountMode === 'NONE') return;
+
+    setDiscountInput((prev) => {
+      const numeric = Number(prev || '0');
+      const next = Math.max(0, numeric + delta);
+      if (next === 0) return '';
+
+      if (discountMode === 'PERCENT') {
+        return next.toFixed(0);
+      }
+      return next.toFixed(2);
+    });
+  };
+
+  const handleOpenPayment = () => {
+    if (!cart.length || isSubmitting) {
+      setStatusMessage('No energies queued. Add a relic or ration before deploying.');
+      return;
+    }
+    setIsPaymentOpen(true);
+  };
+
+  const handleCompleteSale = async () => {
     if (!cart.length || isSubmitting) {
       setStatusMessage('No energies queued. Add a relic or ration before deploying.');
       return;
@@ -223,10 +455,17 @@ export default function PosPage() {
     setLastOrderId(null);
 
     try {
-      let paymentChangeCents = changeCents;
+      let paymentChangeCents = paymentType === 'CASH' ? changeCents ?? 0 : undefined;
       if (typeof paymentChangeCents === 'number' && paymentChangeCents < 0) {
         paymentChangeCents = 0;
       }
+      const paymentGivenCents =
+        paymentType === 'CASH'
+          ? typeof givenCents === 'number'
+            ? givenCents
+            : totalCents
+          : undefined;
+
       const payload: DraftOrderPayload = {
         items: cart.map((item) => ({
           productId: item.productId,
@@ -241,7 +480,7 @@ export default function PosPage() {
           {
             type: paymentType,
             amountCents: totalCents,
-            givenCents,
+            givenCents: paymentGivenCents,
             changeCents: paymentChangeCents,
           },
         ],
@@ -275,6 +514,7 @@ export default function PosPage() {
       setPaymentType('CASH');
       setDiscountMode('NONE');
       setDiscountInput('');
+      setIsPaymentOpen(false);
     } catch (error) {
       console.error(error);
       setStatusMessage('Rift Jammed – Network error while deploying.');
@@ -459,50 +699,27 @@ export default function PosPage() {
           <div className="space-y-2 rounded-xl bg-white/5 p-4">
             <div className="mt-4 space-y-2">
               <div className="text-xs font-semibold text-[#A0B4D8]">Payment</div>
-              <div className="flex gap-2">
-                {(['CASH', 'CARD', 'OTHER'] as PaymentType[]).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setPaymentType(type);
-                      if (type !== 'CASH') {
-                        setCashGiven('');
-                      }
-                    }}
-                    className={
-                      'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
-                      (paymentType === type
-                        ? 'bg-[#FFE561] text-[#0b1222]'
-                        : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
-                    }
-                  >
-                    {type === 'CASH' ? 'Cash' : type === 'CARD' ? 'Card' : 'Other'}
-                  </button>
-                ))}
+              <div className="rounded-xl bg-white/5 p-3 text-sm text-[#E9F9FF]">
+                <div className="flex items-center justify-between">
+                  <span>Method</span>
+                  <span className="font-bold text-[#FFE561]">{paymentType === 'CASH' ? 'Cash' : paymentType === 'CARD' ? 'Card / EFTPOS' : 'Other'}</span>
+                </div>
+                {paymentType === 'CASH' && (
+                  <div className="mt-2 space-y-1 text-xs text-[#A0B4D8]">
+                    <div className="flex justify-between">
+                      <span>Cash given</span>
+                      <span className="text-[#E9F9FF]">{cashGiven ? `$${cashGiven}` : '$0.00'}</span>
+                    </div>
+                    {typeof changeCents === 'number' && changeCents > 0 && (
+                      <div className="flex justify-between text-[#E9F9FF]">
+                        <span>Change</span>
+                        <span className="font-semibold">${(changeCents / 100).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-[#A0B4D8]">Adjust tender in payment window.</p>
               </div>
-
-              {paymentType === 'CASH' && (
-                <div className="mt-2">
-                  <div className="text-[10px] font-semibold text-[#A0B4D8]">Cash given (NZD)</div>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    className="mt-1 w-full rounded-md bg-white/5 px-2 py-1 text-xs text-[#E9F9FF] outline-none ring-1 ring-white/10"
-                    value={cashGiven}
-                    onChange={(e) => setCashGiven(e.target.value)}
-                    placeholder="e.g. 20.00"
-                  />
-                </div>
-              )}
-
-              {paymentType === 'CASH' && typeof changeCents === 'number' && changeCents > 0 && (
-                <div className="mt-1 text-xs text-[#E9F9FF]">
-                  Change: <span className="font-semibold">${(changeCents / 100).toFixed(2)}</span>
-                </div>
-              )}
             </div>
 
             <div className="mt-4 space-y-2">
@@ -556,17 +773,47 @@ export default function PosPage() {
               </div>
 
               {discountMode !== 'NONE' && (
-                <div>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    className="mt-2 w-full rounded-md bg-white/5 px-2 py-1 text-xs text-[#E9F9FF] outline-none ring-1 ring-white/10"
-                    value={discountInput}
-                    onChange={(e) => setDiscountInput(e.target.value)}
-                    placeholder={discountMode === 'PERCENT' ? 'Percent e.g. 10' : 'Dollars e.g. 5'}
-                  />
+                <div className="space-y-2 rounded-xl bg-white/5 p-3 text-xs text-[#E9F9FF]">
+                  <div className="flex items-center justify-between">
+                    <span>Current</span>
+                    <span className="font-semibold text-[#FFE561]">
+                      {discountInput
+                        ? discountMode === 'PERCENT'
+                          ? `${discountInput}%`
+                          : `$${discountInput}`
+                        : 'None'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => adjustDiscountValue(-1)}
+                      className="rounded-lg bg-[#111827] px-2 py-2 text-[#E9F9FF] hover:bg-[#1c2741]"
+                    >
+                      -1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => adjustDiscountValue(1)}
+                      className="rounded-lg bg-[#111827] px-2 py-2 text-[#E9F9FF] hover:bg-[#1c2741]"
+                    >
+                      +1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => adjustDiscountValue(5)}
+                      className="rounded-lg bg-[#111827] px-2 py-2 text-[#E9F9FF] hover:bg-[#1c2741]"
+                    >
+                      +5
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDiscountInput('')}
+                    className="w-full rounded-lg bg-white/10 px-2 py-2 text-[11px] font-semibold text-white hover:bg-white/20"
+                  >
+                    Clear discount
+                  </button>
                 </div>
               )}
             </div>
@@ -608,15 +855,30 @@ export default function PosPage() {
             )}
             <button
               type="button"
-              onClick={handleCharge}
+              onClick={handleOpenPayment}
               disabled={isSubmitting || cart.length === 0}
               className="mt-3 w-full rounded-2xl bg-[#00C2FF] px-4 py-3 text-center text-lg font-black text-[#1E1E1E] shadow-lg hover:scale-[1.01] transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? 'Deploying...' : 'Deploy Order'}
+              {isSubmitting ? 'Deploying...' : 'Rift Checkout'}
             </button>
           </div>
         </aside>
       </div>
+      {isPaymentOpen && (
+        <PaymentOverlay
+          isOpen={isPaymentOpen}
+          onClose={() => setIsPaymentOpen(false)}
+          totalCents={totalCents}
+          discountedSubtotalCents={discountedSubtotalCents}
+          taxCents={taxCents}
+          paymentType={paymentType}
+          setPaymentType={setPaymentType}
+          cashGiven={cashGiven}
+          setCashGiven={setCashGiven}
+          onCompleteSale={handleCompleteSale}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </main>
   );
 }
