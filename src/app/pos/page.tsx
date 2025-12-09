@@ -21,6 +21,13 @@ type CartItem = {
   unitPriceCents: number;
 };
 
+type PaymentType = 'CASH' | 'CARD' | 'OTHER';
+
+type PaymentDraft = {
+  type: PaymentType;
+  amountCents: number;
+};
+
 type DraftOrderItem = {
   productId: string;
   name: string;
@@ -32,6 +39,7 @@ type DraftOrderItem = {
 type DraftOrderPayload = {
   items: DraftOrderItem[];
   cashierName?: string;
+  payments?: PaymentDraft[];
 };
 
 type PosProduct = Product & { basePriceCents?: number };
@@ -52,6 +60,7 @@ export default function PosPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [paymentType, setPaymentType] = useState<PaymentType>('CASH');
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -160,6 +169,7 @@ export default function PosPage() {
     setLastOrderId(null);
 
     try {
+      const totalCents = subtotalCents + taxCents;
       const payload: DraftOrderPayload = {
         items: cart.map((item) => ({
           productId: item.productId,
@@ -169,6 +179,12 @@ export default function PosPage() {
           modifiers: [],
         })),
         cashierName: 'Unknown',
+        payments: [
+          {
+            type: paymentType,
+            amountCents: totalCents,
+          },
+        ],
       };
 
       const response = await fetch('/api/orders', {
@@ -373,6 +389,26 @@ export default function PosPage() {
           </div>
 
           <div className="space-y-2 rounded-xl bg-white/5 p-4">
+            <div className="mt-4 space-y-2">
+              <div className="text-xs font-semibold text-[#A0B4D8]">Payment</div>
+              <div className="flex gap-2">
+                {(['CASH', 'CARD', 'OTHER'] as PaymentType[]).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setPaymentType(type)}
+                    className={
+                      'flex-1 rounded-full px-3 py-1 text-xs font-semibold transition ' +
+                      (paymentType === type
+                        ? 'bg-[#FFE561] text-[#0b1222]'
+                        : 'bg-white/5 text-[#E9F9FF] hover:bg-white/10')
+                    }
+                  >
+                    {type === 'CASH' ? 'Cash' : type === 'CARD' ? 'Card' : 'Other'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
               <span>Frost Subtotal</span>
               <span>{formatCurrencyFromCents(subtotalCents)}</span>

@@ -1,5 +1,12 @@
 import { Modifier } from '@/lib/modifier_manager';
 
+export type PaymentType = 'CASH' | 'CARD' | 'OTHER';
+
+export interface Payment {
+  type: PaymentType | string;
+  amountCents: number;
+}
+
 export interface OrderItem {
   productId: string;
   name: string;
@@ -22,4 +29,5 @@ export interface Order {
   totals: OrderTotals;
   taxFree: boolean;
   note?: string;
+  payments?: Payment[];
 }
