@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Product } from '@/domain/models/product';
+import { AdminNav } from '@/components/AdminNav';
 
 function createEmptyProduct(): Product {
   return {
@@ -103,20 +103,7 @@ export default function AdminProductsPage() {
             <p className="text-sm text-white/70">Add, edit, or deactivate products for the POS.</p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <nav className="flex flex-wrap gap-2 rounded-full bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 ring-1 ring-white/10">
-              <Link
-                href="/admin/products"
-                className="rounded-full bg-[#00C2FF]/20 px-3 py-1 text-[#E9F9FF] transition hover:bg-[#00C2FF]/30"
-              >
-                Products
-              </Link>
-              <Link
-                href="/admin/reports/tax-weekly"
-                className="rounded-full bg-white/10 px-3 py-1 transition hover:bg-white/20"
-              >
-                Weekly Tax
-              </Link>
-            </nav>
+            <AdminNav />
             <div className="flex gap-3">
               <button
                 type="button"

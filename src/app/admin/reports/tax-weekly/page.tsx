@@ -1,8 +1,8 @@
 "use client";
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { TaxSummary } from '@/domain/orders/taxSummary';
+import { AdminNav } from '@/components/AdminNav';
 
 interface ReportResponse {
   range: { startDate: string; endDate: string };
@@ -102,20 +102,7 @@ export default function WeeklyTaxReportPage() {
             <h1 className="text-3xl font-black text-[#E9F9FF]">Weekly Tax Report</h1>
             <p className="text-sm text-white/70">Review GST totals for any seven-day window.</p>
           </div>
-          <nav className="flex flex-wrap gap-2 rounded-full bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 ring-1 ring-white/10">
-            <Link
-              href="/admin/products"
-              className="rounded-full bg-white/10 px-3 py-1 transition hover:bg-white/20"
-            >
-              Products
-            </Link>
-            <Link
-              href="/admin/reports/tax-weekly"
-              className="rounded-full bg-[#00C2FF]/20 px-3 py-1 text-[#E9F9FF] transition hover:bg-[#00C2FF]/30"
-            >
-              Weekly Tax
-            </Link>
-          </nav>
+          <AdminNav />
         </div>
 
         <div className="rounded-2xl bg-white/5 p-5 shadow-lg ring-1 ring-white/10">
