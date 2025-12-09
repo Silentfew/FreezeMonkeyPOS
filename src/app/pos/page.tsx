@@ -85,13 +85,6 @@ export default function PosPage() {
   const taxCents = 0;
   const totalCents = subtotalCents + taxCents;
 
-  const cartItemById = useMemo(() => {
-    return cart.reduce<Record<string, CartItem>>((acc, item) => {
-      acc[item.productId] = item;
-      return acc;
-    }, {});
-  }, [cart]);
-
   const handleAddToCart = (product: Product) => {
     setStatusMessage(null);
     setCart((current) => {
@@ -128,7 +121,16 @@ export default function PosPage() {
   };
 
   const handleCharge = async () => {
-    if (!cart.length || submitting) return;
+    if (submitting) return;
+
+    if (!cart.length) {
+      setStatusMessage({
+        type: 'error',
+        text: 'No energies queued. Add a relic or ration before deploying.',
+      });
+      return;
+    }
+
     setSubmitting(true);
     setStatusMessage(null);
 
@@ -141,23 +143,10 @@ export default function PosPage() {
         cashierName: 'Unknown',
       };
 
-      const apiPayload = {
-        ...payload,
-        items: payload.items.map((item) => {
-          const cartItem = cartItemById[item.productId];
-          return {
-            ...item,
-            name: cartItem?.name ?? item.productId,
-            basePrice: cartItem ? cartItem.unitPriceCents / 100 : 0,
-            modifiers: [],
-          };
-        }),
-      };
-
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiPayload),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -175,7 +164,7 @@ export default function PosPage() {
     } catch (error) {
       setStatusMessage({
         type: 'error',
-        text: 'Rift Jammed – Could not deploy this order. Try again or call Pip.',
+        text: 'Rift Jammed – Could not deploy this order. Try again.',
       });
     } finally {
       setSubmitting(false);
@@ -359,7 +348,7 @@ export default function PosPage() {
             <button
               type="button"
               onClick={handleCharge}
-              disabled={!cart.length || submitting}
+              disabled={submitting}
               className="mt-3 w-full rounded-2xl bg-[#00C2FF] px-4 py-3 text-center text-lg font-black text-[#1E1E1E] shadow-lg hover:scale-[1.01] transition disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? 'Deploying...' : 'Deploy Order'}
