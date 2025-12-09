@@ -39,6 +39,9 @@ type DraftOrderItem = {
 type DraftOrderPayload = {
   items: DraftOrderItem[];
   cashierName?: string;
+  taxFree?: boolean;
+  note?: string;
+  taxRate?: number;
   payments?: PaymentDraft[];
 };
 
@@ -179,6 +182,7 @@ export default function PosPage() {
           modifiers: [],
         })),
         cashierName: 'Unknown',
+        taxFree: false,
         payments: [
           {
             type: paymentType,
