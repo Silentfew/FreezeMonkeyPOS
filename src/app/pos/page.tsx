@@ -167,11 +167,16 @@ export default function PosPage() {
 
       const data = await response.json();
       const orderId: string = data?.orderNumber ?? data?.id ?? 'order';
-      setStatusMessage({ type: 'success', text: `Order ${orderId} completed` });
+      setStatusMessage({
+        type: 'success',
+        text: `Rift Deployed – Ticket ${orderId} logged in the Codex.`,
+      });
       setCart([]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to charge customer';
-      setStatusMessage({ type: 'error', text: message });
+      setStatusMessage({
+        type: 'error',
+        text: 'Rift Jammed – Could not deploy this order. Try again or call Pip.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -187,8 +192,8 @@ export default function PosPage() {
                 FM
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Freeze Monkey POS</p>
-                <h1 className="text-2xl font-black text-[#E9F9FF]">Stormfront Counter</h1>
+                <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Freeze Monkey POS · Rift Console</p>
+                <h1 className="text-2xl font-black text-[#E9F9FF]">Stormfront Counter · Frostoria Outpost</h1>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -201,7 +206,7 @@ export default function PosPage() {
               <div
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}
               >
-                {offline ? 'Offline mode' : 'Online'}
+                {offline ? 'Rift Link Disrupted (Offline)' : 'Rift Link Stable'}
               </div>
             </div>
           </header>
@@ -272,15 +277,15 @@ export default function PosPage() {
         <aside className="w-full max-w-md space-y-4 rounded-2xl bg-[#0F172A]/80 p-4 shadow-xl ring-1 ring-white/10 backdrop-blur">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Ticket</p>
-              <h3 className="text-xl font-black text-[#E9F9FF]">Order Summary</h3>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Order Summary</p>
+              <h3 className="text-xl font-black text-[#E9F9FF]">Ticket · Rift Manifest</h3>
             </div>
           </div>
 
           <div className="space-y-3 overflow-y-auto rounded-xl bg-white/5 p-3 max-h-[55vh]">
             {cart.length === 0 && (
               <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-white/10 text-[#E9F9FF]/70">
-                No items yet. Tap a product to start.
+                No energies queued. Tap a relic or ration to begin.
               </div>
             )}
             {cart.map((item) => (
@@ -329,15 +334,15 @@ export default function PosPage() {
 
           <div className="space-y-2 rounded-xl bg-white/5 p-4">
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Subtotal</span>
+              <span>Frost Subtotal</span>
               <span>{formatCurrencyFromCents(subtotalCents)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Tax</span>
+              <span>Earthrealm Tax</span>
               <span>{formatCurrencyFromCents(taxCents)}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-2 text-lg font-black text-[#FFE561]">
-              <span>Total</span>
+              <span>Stormfront Total</span>
               <span>{formatCurrencyFromCents(totalCents)}</span>
             </div>
             {statusMessage && (
@@ -357,7 +362,7 @@ export default function PosPage() {
               disabled={!cart.length || submitting}
               className="mt-3 w-full rounded-2xl bg-[#00C2FF] px-4 py-3 text-center text-lg font-black text-[#1E1E1E] shadow-lg hover:scale-[1.01] transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? 'Processing...' : 'Charge Customer'}
+              {submitting ? 'Deploying...' : 'Deploy Order'}
             </button>
           </div>
         </aside>

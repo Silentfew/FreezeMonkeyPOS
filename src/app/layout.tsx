@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FreezeMonkey POS",
-  description: "Touch-friendly POS dashboard for managing products.",
+  title: "Freeze Monkey POS · Rift Console",
+  description: "Stormfront Counter control panel for Freeze Monkey staff.",
 };
 
 export default function RootLayout({
