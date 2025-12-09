@@ -3,6 +3,7 @@ import { SaleProduct } from './order_manager';
 export interface Product extends SaleProduct {
   categoryId: string;
   hasModifiers?: boolean;
+  active?: boolean;
 }
 
 export async function fetchProducts(categoryId?: string): Promise<Product[]> {
@@ -13,7 +14,13 @@ export async function fetchProducts(categoryId?: string): Promise<Product[]> {
   }
   const data = await response.json();
   const products: Product[] = Array.isArray(data?.products)
-    ? data.products.map((product: Product) => ({ ...product, hasModifiers: true }))
+    ? data.products
+        .map((product: Product) => ({
+          ...product,
+          hasModifiers: true,
+          active: product.active ?? true,
+        }))
+        .filter((product) => product.active !== false)
     : [];
   return products;
 }

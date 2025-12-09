@@ -1,5 +1,6 @@
 {
   "currency": "USD",
   "taxRate": 0.15,
-  "taxInclusive": false
+  "taxInclusive": false,
+  "pins": []
 }
