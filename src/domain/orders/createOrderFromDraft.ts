@@ -4,7 +4,8 @@ import {
   calculateItemTotal,
   calculateTotals,
 } from '@/lib/order_manager';
-import { Order, OrderItem, OrderTotals, Payment } from '../models/order';
+import { Order, OrderItem, OrderTotals } from '../models/order';
+import type { Payment } from '../models/order';
 
 export interface OrderDraft {
   items: DraftOrderItem[];
@@ -46,15 +47,17 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
 
   const payments =
     Array.isArray(draft.payments) && draft.payments.length > 0
-      ? draft.payments.map((p) => {
+      ? draft.payments.map((p: any) => {
           const amountCents =
-            typeof (p as any).amountCents === 'number'
-              ? (p as any).amountCents
-              : Math.round(((p as any).amount ?? 0) * 100);
+            typeof p.amountCents === 'number'
+              ? p.amountCents
+              : typeof p.amount === 'number'
+              ? Math.round(p.amount * 100)
+              : 0;
           return {
-            type: (p as any).type ?? 'OTHER',
+            type: p.type ?? 'OTHER',
             amountCents,
-          };
+          } as Payment;
         })
       : undefined;
 
