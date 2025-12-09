@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Product } from '@/domain/models/product';
 
@@ -95,28 +96,44 @@ export default function AdminProductsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
             <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Products</h1>
             <p className="text-sm text-white/70">Add, edit, or deactivate products for the POS.</p>
           </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={addProduct}
-              className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
-            >
-              + Add product
-            </button>
-            <button
-              type="button"
-              onClick={saveProducts}
-              disabled={saving}
-              className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <nav className="flex flex-wrap gap-2 rounded-full bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 ring-1 ring-white/10">
+              <Link
+                href="/admin/products"
+                className="rounded-full bg-[#00C2FF]/20 px-3 py-1 text-[#E9F9FF] transition hover:bg-[#00C2FF]/30"
+              >
+                Products
+              </Link>
+              <Link
+                href="/admin/reports/tax-weekly"
+                className="rounded-full bg-white/10 px-3 py-1 transition hover:bg-white/20"
+              >
+                Weekly Tax
+              </Link>
+            </nav>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={addProduct}
+                className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
+              >
+                + Add product
+              </button>
+              <button
+                type="button"
+                onClick={saveProducts}
+                disabled={saving}
+                className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
           </div>
         </div>
 
