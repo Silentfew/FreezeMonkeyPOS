@@ -66,3 +66,23 @@ export async function appendOrderFromDraft(draft: OrderDraft): Promise<Order> {
 export async function getOrdersForDate(date: string): Promise<Order[]> {
   return readDailyOrders(date);
 }
+
+export async function getOrdersBetween(startDate: string, endDate: string): Promise<Order[]> {
+  const orders: Order[] = [];
+
+  const current = new Date(startDate);
+  current.setUTCHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setUTCHours(0, 0, 0, 0);
+
+  while (current <= end) {
+    const dateString = current.toISOString().slice(0, 10);
+    const dailyOrders = await readJSON<Order[]>(ordersFilePath(dateString), []);
+    if (Array.isArray(dailyOrders) && dailyOrders.length > 0) {
+      orders.push(...dailyOrders);
+    }
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return orders;
+}
