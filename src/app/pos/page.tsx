@@ -21,12 +21,20 @@ type CartItem = {
   unitPriceCents: number;
 };
 
+type DraftOrderItem = {
+  productId: string;
+  name: string;
+  basePrice: number;
+  quantity: number;
+  modifiers: [];
+};
+
 type DraftOrderPayload = {
-  items: { productId: string; quantity: number; note?: string }[];
+  items: DraftOrderItem[];
   cashierName?: string;
 };
 
-type StatusMessage = { type: 'success' | 'error'; text: string } | null;
+type PosProduct = Product & { basePriceCents?: number };
 
 function formatCurrencyFromCents(amountCents: number) {
   return `$${(amountCents / 100).toFixed(2)}`;
@@ -36,12 +44,13 @@ export default function PosPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<PosProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [offline, setOffline] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<StatusMessage>(null);
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -100,10 +109,15 @@ export default function PosPage() {
   const taxCents = 0;
   const totalCents = subtotalCents + taxCents;
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: PosProduct) => {
     setStatusMessage(null);
+    setLastOrderId(null);
     setCart((current) => {
       const existing = current.find((item) => item.productId === product.id);
+      const unitPriceCents =
+        typeof product.basePriceCents === 'number'
+          ? product.basePriceCents
+          : Math.round(product.price * 100);
       if (existing) {
         return current.map((item) =>
           item.productId === product.id
@@ -117,7 +131,7 @@ export default function PosPage() {
           productId: product.id,
           name: product.name,
           quantity: 1,
-          unitPriceCents: Math.round(product.price * 100),
+          unitPriceCents,
         },
       ];
     });
@@ -136,24 +150,23 @@ export default function PosPage() {
   };
 
   const handleCharge = async () => {
-    if (submitting) return;
-
-    if (!cart.length) {
-      setStatusMessage({
-        type: 'error',
-        text: 'No energies queued. Add a relic or ration before deploying.',
-      });
+    if (!cart.length || isSubmitting) {
+      setStatusMessage('No energies queued. Add a relic or ration before deploying.');
       return;
     }
 
-    setSubmitting(true);
+    setIsSubmitting(true);
     setStatusMessage(null);
+    setLastOrderId(null);
 
     try {
       const payload: DraftOrderPayload = {
         items: cart.map((item) => ({
           productId: item.productId,
+          name: item.name,
+          basePrice: item.unitPriceCents / 100,
           quantity: item.quantity,
+          modifiers: [],
         })),
         cashierName: 'Unknown',
       };
@@ -165,24 +178,24 @@ export default function PosPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Failed to save order' }));
-        throw new Error(error?.error ?? 'Failed to save order');
+        setStatusMessage('Rift Jammed – Could not deploy this order. Try again.');
+        return;
       }
 
       const data = await response.json();
-      const orderId: string = data?.orderNumber ?? data?.id ?? 'order';
-      setStatusMessage({
-        type: 'success',
-        text: `Rift Deployed – Ticket ${orderId} logged in the Codex.`,
-      });
+      const orderId: string = data?.orderNumber ?? data?.id ?? null;
+      setLastOrderId(orderId);
+      setStatusMessage(
+        orderId
+          ? `Rift Deployed – Ticket ${orderId} logged in the Codex.`
+          : 'Rift Deployed – Ticket logged in the Codex.',
+      );
       setCart([]);
     } catch (error) {
-      setStatusMessage({
-        type: 'error',
-        text: 'Rift Jammed – Could not deploy this order. Try again.',
-      });
+      console.error(error);
+      setStatusMessage('Rift Jammed – Network error while deploying.');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -282,10 +295,16 @@ export default function PosPage() {
                       {CATEGORY_DETAILS[product.categoryId]?.title}
                     </div>
                     <div className="mt-2 text-lg font-black text-[#E9F9FF]">{product.name}</div>
-                    <div className="mt-3 text-xl font-black text-[#FFE561]">{formatCurrencyFromCents(Math.round(product.price * 100))}</div>
-                  </button>
-                </div>
-              ))}
+                  <div className="mt-3 text-xl font-black text-[#FFE561]">
+                    {formatCurrencyFromCents(
+                      typeof product.basePriceCents === 'number'
+                        ? product.basePriceCents
+                        : Math.round(product.price * 100),
+                    )}
+                  </div>
+                </button>
+              </div>
+            ))}
               {products.length === 0 && (
                 <div className="col-span-full flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 text-[#E9F9FF]/70">
                   No products found.
@@ -366,24 +385,23 @@ export default function PosPage() {
               <span>Stormfront Total</span>
               <span>{formatCurrencyFromCents(totalCents)}</span>
             </div>
+            {lastOrderId && (
+              <div className="rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/80">
+                Last order: {lastOrderId}
+              </div>
+            )}
             {statusMessage && (
-              <div
-                className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-                  statusMessage.type === 'success'
-                    ? 'bg-green-500/20 text-green-100'
-                    : 'bg-red-500/20 text-red-100'
-                }`}
-              >
-                {statusMessage.text}
+              <div className="rounded-xl bg-black/30 px-3 py-2 text-sm font-semibold text-white">
+                {statusMessage}
               </div>
             )}
             <button
               type="button"
               onClick={handleCharge}
-              disabled={submitting}
+              disabled={isSubmitting || cart.length === 0}
               className="mt-3 w-full rounded-2xl bg-[#00C2FF] px-4 py-3 text-center text-lg font-black text-[#1E1E1E] shadow-lg hover:scale-[1.01] transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? 'Deploying...' : 'Deploy Order'}
+              {isSubmitting ? 'Deploying...' : 'Deploy Order'}
             </button>
           </div>
         </aside>
