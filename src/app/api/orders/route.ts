@@ -6,12 +6,15 @@ export async function POST(request: Request) {
   try {
     const payload = await request.json();
     const payments = Array.isArray(payload?.payments) ? payload.payments : undefined;
+    const discountCents =
+      typeof payload?.discountCents === 'number' ? payload.discountCents : undefined;
     const draft: OrderDraft = {
       items: Array.isArray(payload?.items) ? payload.items : [],
       taxFree: Boolean(payload?.taxFree),
       note: typeof payload?.note === 'string' ? payload.note : undefined,
       taxRate: typeof payload?.taxRate === 'number' ? payload.taxRate : undefined,
       payments,
+      discountCents,
     };
 
     if (!draft.items.length) {

@@ -12,7 +12,10 @@ export interface OrderDraft {
   taxFree?: boolean;
   note?: string;
   taxRate?: number;
-  payments?: Payment[] | { type?: string; amountCents?: number; amount?: number }[];
+  payments?:
+    | Payment[]
+    | { type?: string; amountCents?: number; amount?: number; givenCents?: number; changeCents?: number }[];
+  discountCents?: number;
 }
 
 interface BuildContext {
@@ -54,11 +57,19 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
               : typeof p.amount === 'number'
               ? Math.round(p.amount * 100)
               : 0;
+
           return {
             type: p.type ?? 'OTHER',
             amountCents,
+            givenCents: typeof p.givenCents === 'number' ? p.givenCents : undefined,
+            changeCents: typeof p.changeCents === 'number' ? p.changeCents : undefined,
           } as Payment;
         })
+      : undefined;
+
+  const discountCents =
+    typeof draft.discountCents === 'number' && draft.discountCents > 0
+      ? draft.discountCents
       : undefined;
 
   return {
@@ -69,5 +80,6 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
     taxFree,
     note: draft.note,
     payments,
+    discountCents,
   };
 }
