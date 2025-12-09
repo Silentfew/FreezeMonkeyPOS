@@ -20,6 +20,11 @@ type CartItem = {
   unitPriceCents: number;
 };
 
+type DraftOrderPayload = {
+  items: { productId: string; quantity: number; note?: string }[];
+  cashierName?: string;
+};
+
 type StatusMessage = { type: 'success' | 'error'; text: string } | null;
 
 function formatCurrencyFromCents(amountCents: number) {
@@ -79,6 +84,13 @@ export default function PosPage() {
   const taxCents = 0;
   const totalCents = subtotalCents + taxCents;
 
+  const cartItemById = useMemo(() => {
+    return cart.reduce<Record<string, CartItem>>((acc, item) => {
+      acc[item.productId] = item;
+      return acc;
+    }, {});
+  }, [cart]);
+
   const handleAddToCart = (product: Product) => {
     setStatusMessage(null);
     setCart((current) => {
@@ -120,21 +132,31 @@ export default function PosPage() {
     setStatusMessage(null);
 
     try {
-      const payload = {
+      const payload: DraftOrderPayload = {
         items: cart.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          name: item.name,
-          basePrice: item.unitPriceCents / 100,
-          modifiers: [],
         })),
         cashierName: 'Unknown',
+      };
+
+      const apiPayload = {
+        ...payload,
+        items: payload.items.map((item) => {
+          const cartItem = cartItemById[item.productId];
+          return {
+            ...item,
+            name: cartItem?.name ?? item.productId,
+            basePrice: cartItem ? cartItem.unitPriceCents / 100 : 0,
+            modifiers: [],
+          };
+        }),
       };
 
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(apiPayload),
       });
 
       if (!response.ok) {
