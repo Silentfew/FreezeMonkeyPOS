@@ -201,7 +201,7 @@ export default function PosPage() {
                 href="/admin/products"
                 className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#ffeb85]"
               >
-                Admin
+                Rift Control
               </Link>
               <div
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}
