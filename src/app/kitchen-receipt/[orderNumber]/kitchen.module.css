@@ -1,0 +1,59 @@
+.kitchenReceiptRoot {
+  width: 80mm;
+  padding: 8px 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #000;
+}
+
+.kitchenTicketHuge {
+  text-align: center;
+  font-size: 40px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.kitchenMeta {
+  text-align: center;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.kitchenSeparator {
+  text-align: center;
+  font-size: 10px;
+  margin: 4px 0;
+}
+
+.kitchenItems {
+  font-size: 12px;
+}
+
+.kitchenItemRow {
+  margin-bottom: 2px;
+}
+
+.kitchenNotesTitle {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.kitchenNotesBody {
+  font-size: 12px;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .kitchenReceiptRoot {
+    margin: 0;
+  }
+}

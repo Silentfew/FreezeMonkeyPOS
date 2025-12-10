@@ -33,4 +33,5 @@ export interface Order {
   note?: string;
   payments?: Payment[];
   discountCents?: number;
+  ticketNumber?: number;
 }

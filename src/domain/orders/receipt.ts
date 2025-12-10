@@ -14,7 +14,7 @@ export function buildReceiptLines(order: Order): ReceiptLine[] {
   const lines: ReceiptLine[] = [];
 
   lines.push({ type: 'text', value: `Freeze Monkey POS` });
-  lines.push({ type: 'text', value: `Ticket ${order.orderNumber}` });
+  lines.push({ type: 'text', value: `Ticket ${order.ticketNumber ?? order.orderNumber}` });
   lines.push({ type: 'text', value: new Date(order.createdAt).toLocaleString() });
   lines.push({ type: 'separator', value: '------------------------------' });
 
