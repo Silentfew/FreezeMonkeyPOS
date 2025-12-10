@@ -7,6 +7,14 @@ export interface Modifier {
   action: ModifierAction;
 }
 
+export const MODIFIERS_FILE = 'modifiers.json';
+
+export async function readModifiers(): Promise<Modifier[]> {
+  const { readJSON } = await import('@/infra/fs/jsonStore');
+  const modifiers = await readJSON<Modifier[]>(MODIFIERS_FILE, []);
+  return Array.isArray(modifiers) ? modifiers : [];
+}
+
 export function toggleModifier(selected: Modifier[], modifier: Modifier): Modifier[] {
   const exists = selected.find((item) => item.id === modifier.id);
   if (exists) {
