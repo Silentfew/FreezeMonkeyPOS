@@ -43,6 +43,7 @@
 }
 
 @media print {
+  /* Remove margins on the root container when printing */
   .kitchenReceiptRoot {
     margin: 0;
   }
