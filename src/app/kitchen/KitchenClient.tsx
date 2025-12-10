@@ -56,21 +56,30 @@ function formatCountdown(order: KitchenOrder, nowMs: number) {
   const { isOverdue, remainingSeconds, overdueSeconds } = computeTime(order, nowMs);
 
   if (isOverdue) {
-    const minutes = Math.floor(overdueSeconds / 60);
-    const seconds = overdueSeconds % 60;
+    const minutes = Math.max(1, Math.ceil(overdueSeconds / 60));
     return {
-      label: `Overdue ${minutes}m ${seconds.toString().padStart(2, '0')}s`,
+      label: `Overdue ${minutes} min`,
       isOverdue: true,
     };
   }
 
-  const minutes = Math.floor(remainingSeconds / 60);
-  const seconds = remainingSeconds % 60;
+  if (remainingSeconds >= 3600) {
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    return { label: `${hours}h ${minutes.toString().padStart(2, '0')}m`, isOverdue: false };
+  }
 
-  return {
-    label: minutes > 0 ? `${minutes}m ${seconds.toString().padStart(2, '0')}s` : `${seconds}s`,
-    isOverdue: false,
-  };
+  if (remainingSeconds >= 60) {
+    const minutes = Math.ceil(remainingSeconds / 60);
+    return { label: `${minutes} min`, isOverdue: false };
+  }
+
+  return { label: `${remainingSeconds}s`, isOverdue: false };
+}
+
+function getSortTimestamp(order: KitchenOrder) {
+  if (order.targetReadyAt) return new Date(order.targetReadyAt).getTime();
+  return new Date(order.createdAt).getTime();
 }
 
 export default function KitchenClient() {
@@ -112,11 +121,13 @@ export default function KitchenClient() {
   const sortedOrders = useMemo(
     () =>
       [...orders].sort((a, b) => {
+        const timeA = getSortTimestamp(a);
+        const timeB = getSortTimestamp(b);
+        if (timeA !== timeB) return timeA - timeB;
+
         const ticketA = typeof a.ticketNumber === 'number' ? a.ticketNumber : Number.MAX_SAFE_INTEGER;
         const ticketB = typeof b.ticketNumber === 'number' ? b.ticketNumber : Number.MAX_SAFE_INTEGER;
-
-        if (ticketA !== ticketB) return ticketA - ticketB;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return ticketA - ticketB;
       }),
     [orders],
   );

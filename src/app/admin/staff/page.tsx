@@ -4,12 +4,22 @@ import { useEffect, useState } from 'react';
 import { PinUser } from '@/domain/models/settings';
 import { AdminHeader } from '@/components/AdminHeader';
 
-function createEmptyPin(): PinUser {
-  return { name: '', pin: '', role: 'STAFF' };
+type PinUserWithKey = PinUser & { _key: string };
+
+function withStableKey(pin: PinUser): PinUserWithKey {
+  const randomId =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36);
+  return { ...pin, _key: randomId };
+}
+
+function createEmptyPin(): PinUserWithKey {
+  return withStableKey({ name: '', pin: '', role: 'STAFF' });
 }
 
 export default function StaffAdminPage() {
-  const [pins, setPins] = useState<PinUser[]>([]);
+  const [pins, setPins] = useState<PinUserWithKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -25,7 +35,8 @@ export default function StaffAdminPage() {
         throw new Error('Failed to load settings');
       }
       const data = await response.json();
-      setPins(Array.isArray(data?.settings?.pins) ? data.settings.pins : []);
+      const loadedPins: PinUser[] = Array.isArray(data?.settings?.pins) ? data.settings.pins : [];
+      setPins(loadedPins.map((pin) => withStableKey(pin)));
     } catch (error) {
       console.error(error);
       setStatus({ type: 'error', message: 'Unable to load staff pins' });
@@ -64,7 +75,9 @@ export default function StaffAdminPage() {
       const seenPins = new Set<string>();
       let hasOwner = false;
 
-      for (const pin of pins) {
+      const payloadPins = pins.map(({ _key, ...rest }) => rest);
+
+      for (const pin of payloadPins) {
         const trimmedPin = pin.pin.trim();
         const trimmedName = pin.name.trim();
         if (!trimmedName || !trimmedPin) {
@@ -92,7 +105,7 @@ export default function StaffAdminPage() {
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pins }),
+        body: JSON.stringify({ pins: payloadPins }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -178,7 +191,7 @@ export default function StaffAdminPage() {
                   </tr>
                 ) : (
                   pins.map((pin, index) => (
-                    <tr key={`${pin.name}-${index}`} className="hover:bg-white/5">
+                    <tr key={pin._key || pin.pin || index} className="hover:bg-white/5">
                       <td className="px-4 py-3">
                         <input
                           type="text"
