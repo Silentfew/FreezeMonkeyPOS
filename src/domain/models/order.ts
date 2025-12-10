@@ -32,6 +32,7 @@ export interface Order {
   items: OrderItem[];
   totals: OrderTotals;
   taxFree: boolean;
+  status?: string;
   note?: string;
   payments?: Payment[];
   discountCents?: number;

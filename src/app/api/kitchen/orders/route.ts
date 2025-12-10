@@ -17,13 +17,19 @@ function sortOrdersByTicketAndTime(a: Order, b: Order) {
   return timeA - timeB;
 }
 
+const CLOSED_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'REFUNDED']);
+
 export async function GET() {
   try {
     const date = formatDate();
     const orders = await getOrdersForDate(date);
 
     const openOrders = orders
-      .filter((order) => order.kitchenStatus !== 'DONE')
+      .filter((order) => {
+        const status = order.status;
+        const isClosed = status ? CLOSED_STATUSES.has(status) : false;
+        return order.kitchenStatus !== 'DONE' && !isClosed;
+      })
       .sort(sortOrdersByTicketAndTime);
 
     const now = Date.now();
