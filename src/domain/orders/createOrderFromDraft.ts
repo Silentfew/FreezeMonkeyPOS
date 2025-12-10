@@ -6,6 +6,8 @@ import {
 } from '@/lib/order_manager';
 import { Order, OrderItem, OrderTotals } from '../models/order';
 import type { Payment } from '../models/order';
+import { estimateOrderPrepMinutes } from './estimatePrep';
+import { loadAllProducts } from '@/lib/products-store';
 
 export interface OrderDraft {
   items: DraftOrderItem[];
@@ -43,7 +45,10 @@ function buildTotals(items: DraftOrderItem[], taxFree: boolean, taxRate?: number
   return calculateTotals(items, taxFree, taxRate ?? 0.15);
 }
 
-export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): Order {
+export async function createOrderFromDraft(
+  draft: OrderDraft,
+  context: BuildContext,
+): Promise<Order> {
   const taxFree = draft.taxFree ?? false;
   const createdAt = context.createdAt ?? new Date().toISOString();
   const items = buildItems(draft.items);
@@ -73,6 +78,12 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
       ? draft.discountCents
       : undefined;
 
+  const products = await loadAllProducts();
+  const estimatedPrepMinutes = estimateOrderPrepMinutes(items, products);
+
+  const targetReadyAtDate = new Date(createdAt);
+  targetReadyAtDate.setTime(targetReadyAtDate.getTime() + estimatedPrepMinutes * 60_000);
+
   return {
     orderNumber: context.orderNumber,
     createdAt,
@@ -84,5 +95,7 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
     discountCents,
     ticketNumber: context.ticketNumber,
     kitchenStatus: 'OPEN',
+    estimatedPrepMinutes,
+    targetReadyAt: targetReadyAtDate.toISOString(),
   };
 }

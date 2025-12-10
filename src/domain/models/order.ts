@@ -37,4 +37,6 @@ export interface Order {
   discountCents?: number;
   ticketNumber?: number;
   kitchenStatus?: KitchenStatus;
+  estimatedPrepMinutes?: number;
+  targetReadyAt?: string;
 }

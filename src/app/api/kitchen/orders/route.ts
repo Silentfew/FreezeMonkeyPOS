@@ -26,7 +26,32 @@ export async function GET() {
       .filter((order) => order.kitchenStatus !== 'DONE')
       .sort(sortOrdersByTicketAndTime);
 
-    return NextResponse.json({ date, orders: openOrders });
+    const now = Date.now();
+
+    return NextResponse.json({
+      orders: openOrders.map((order) => {
+        const targetMs = order.targetReadyAt
+          ? new Date(order.targetReadyAt).getTime()
+          : now;
+
+        const diffSeconds = Math.round((targetMs - now) / 1000);
+        const secondsRemaining = Math.max(diffSeconds, 0);
+        const isOverdue = diffSeconds < 0;
+
+        return {
+          id: order.orderNumber,
+          orderNumber: order.orderNumber,
+          ticketNumber: order.ticketNumber ?? null,
+          createdAt: order.createdAt,
+          items: order.items,
+          estimatedPrepMinutes: order.estimatedPrepMinutes ?? null,
+          targetReadyAt: order.targetReadyAt ?? null,
+          secondsRemaining,
+          isOverdue,
+          note: order.note ?? null,
+        };
+      }),
+    });
   } catch (error) {
     console.error('Failed to fetch kitchen orders', error);
     return NextResponse.json({ date: formatDate(), orders: [] }, { status: 500 });

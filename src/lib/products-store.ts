@@ -4,13 +4,18 @@ export interface Product extends SaleProduct {
   categoryId: string;
   hasModifiers?: boolean;
   active?: boolean;
+  prepMinutes?: number;
 }
 
 export const PRODUCTS_FILE = 'products.json';
 
 export function normalizeProducts(products: Product[]): Product[] {
   return Array.isArray(products)
-    ? products.map((product) => ({ ...product, active: product.active ?? true }))
+    ? products.map((product) => ({
+        ...product,
+        active: product.active ?? true,
+        prepMinutes: typeof product.prepMinutes === 'number' ? product.prepMinutes : 1,
+      }))
     : [];
 }
 

@@ -11,6 +11,7 @@ function createEmptyProduct(): Product {
     price: 0,
     categoryId: '',
     active: true,
+    prepMinutes: 1,
   };
 }
 
@@ -142,19 +143,20 @@ export default function AdminProductsPage() {
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Price</th>
+                  <th className="px-4 py-3">Kitchen Time (min)</th>
                   <th className="px-4 py-3">Active</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-white/70">
+                    <td colSpan={5} className="px-4 py-6 text-center text-white/70">
                       Loading products...
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-white/70">
+                    <td colSpan={5} className="px-4 py-6 text-center text-white/70">
                       No products found. Add a new product to get started.
                     </td>
                   </tr>
@@ -185,6 +187,17 @@ export default function AdminProductsPage() {
                           step="0.01"
                           onChange={(event) => updateProduct(index, 'price', Number(event.target.value) || 0)}
                           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          min="0"
+                          value={product.prepMinutes ?? 0}
+                          onChange={(event) =>
+                            updateProduct(index, 'prepMinutes', Number(event.target.value) || 0)
+                          }
+                          className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                         />
                       </td>
                       <td className="px-4 py-3">
