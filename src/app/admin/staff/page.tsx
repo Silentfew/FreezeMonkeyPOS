@@ -44,6 +44,11 @@ export default function StaffAdminPage() {
     );
   };
 
+  const handlePinChange = (index: number, value: string) => {
+    const numericPin = value.replace(/\D/g, "");
+    updatePin(index, "pin", numericPin);
+  };
+
   const addPin = () => {
     setPins((current) => [...current, createEmptyPin()]);
   };
@@ -56,20 +61,50 @@ export default function StaffAdminPage() {
     setSaving(true);
     setStatus(null);
     try {
+      const seenPins = new Set<string>();
+      let hasOwner = false;
+
+      for (const pin of pins) {
+        const trimmedPin = pin.pin.trim();
+        const trimmedName = pin.name.trim();
+        if (!trimmedName || !trimmedPin) {
+          throw new Error("Each staff member requires a name and PIN.");
+        }
+        if (!/^\d+$/.test(trimmedPin)) {
+          throw new Error("Pins must be numeric.");
+        }
+        if (trimmedPin.length < 4) {
+          throw new Error("Pins must be at least 4 digits.");
+        }
+        if (seenPins.has(trimmedPin)) {
+          throw new Error("Pins must be unique.");
+        }
+        if (pin.role === "OWNER") {
+          hasOwner = true;
+        }
+        seenPins.add(trimmedPin);
+      }
+
+      if (!hasOwner) {
+        throw new Error("At least one owner pin is required.");
+      }
+
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pins }),
       });
+      const payload = await response.json();
       if (!response.ok) {
-        throw new Error('Failed to save staff');
+        throw new Error(payload?.error || 'Failed to save staff');
       }
-      await response.json();
       setStatus({ type: 'success', message: 'Staff updated successfully' });
       loadPins(false);
     } catch (error) {
       console.error(error);
-      setStatus({ type: 'error', message: 'Failed to save staff' });
+      const message =
+        error instanceof Error ? error.message : 'Failed to save staff';
+      setStatus({ type: 'error', message });
     } finally {
       setSaving(false);
     }
@@ -84,6 +119,7 @@ export default function StaffAdminPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
             <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Staff Pins</h1>
             <p className="text-sm text-white/70">Add, edit, or remove staff access pins.</p>
+            <p className="text-xs text-amber-100/80">Only owners can change pins. Owner role rows represent admin access.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 justify-end">
             <button
@@ -153,9 +189,11 @@ export default function StaffAdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         <input
-                          type="text"
+                          type="password"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           value={pin.pin}
-                          onChange={(event) => updatePin(index, 'pin', event.target.value)}
+                          onChange={(event) => handlePinChange(index, event.target.value)}
                           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                         />
                       </td>
