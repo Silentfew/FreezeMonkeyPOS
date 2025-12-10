@@ -24,6 +24,8 @@ export interface OrderTotals {
   total: number;
 }
 
+export type KitchenStatus = 'OPEN' | 'DONE';
+
 export interface Order {
   orderNumber: string;
   createdAt: string;
@@ -34,4 +36,5 @@ export interface Order {
   payments?: Payment[];
   discountCents?: number;
   ticketNumber?: number;
+  kitchenStatus?: KitchenStatus;
 }
