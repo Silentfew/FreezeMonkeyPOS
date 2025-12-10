@@ -6,6 +6,8 @@ const SESSION_COOKIE = "pos_session";
 const PUBLIC_PREFIXES = ["/_next", "/favicon", "/assets", "/public"];
 
 export function middleware(request: NextRequest) {
+  const session = request.cookies.get(SESSION_COOKIE)?.value;
+  const isAuth = Boolean(session);
   const { pathname } = request.nextUrl;
 
   if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -16,24 +18,24 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasSession = request.cookies.get(SESSION_COOKIE)?.value;
+  const requiresAuth =
+    pathname.startsWith("/pos") || pathname.startsWith("/admin");
 
-  if (pathname === "/login") {
-    if (hasSession) {
-      const homeUrl = new URL("/", request.url);
-      return NextResponse.redirect(homeUrl);
-    }
-    return NextResponse.next();
+  if (!isAuth && requiresAuth) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
   }
 
-  if (!hasSession) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+  if (isAuth && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/pos";
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: "/:path*",
+  matcher: ["/login", "/pos/:path*", "/admin/:path*"],
 };
