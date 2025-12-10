@@ -4,6 +4,16 @@ export interface Category {
   order: number;
 }
 
+export const CATEGORIES_FILE = 'categories.json';
+
+export async function readCategories(): Promise<Category[]> {
+  const { readJSON } = await import('@/infra/fs/jsonStore');
+  const categories = await readJSON<Category[]>(CATEGORIES_FILE, []);
+  return Array.isArray(categories)
+    ? [...categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    : [];
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const response = await fetch('/api/categories', { cache: 'no-store' });
   if (!response.ok) {

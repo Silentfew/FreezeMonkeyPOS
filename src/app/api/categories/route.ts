@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import categories from '../../../../data/categories.json';
+import { readCategories } from '@/lib/categories-store';
 
-export function GET() {
-  const ordered = Array.isArray(categories)
-    ? [...categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    : [];
-  return NextResponse.json({ categories: ordered });
+export async function GET() {
+  const categories = await readCategories();
+  return NextResponse.json({ categories });
 }

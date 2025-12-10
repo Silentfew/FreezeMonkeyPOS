@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import { readJSON, writeJSON } from '@/infra/fs/jsonStore';
-import { Product } from '@/domain/models/product';
-
-const PRODUCTS_FILE = 'products.json';
-
-function normalizeProducts(products: Product[]): Product[] {
-  return Array.isArray(products)
-    ? products.map((product) => ({ ...product, active: product.active ?? true }))
-    : [];
-}
+import { writeJSON } from '@/infra/fs/jsonStore';
+import {
+  Product,
+  PRODUCTS_FILE,
+  loadAllProducts,
+  normalizeProducts,
+} from '@/lib/products-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +14,7 @@ export async function GET(request: Request) {
   const categoryId = searchParams.get('categoryId');
   const includeInactive = searchParams.get('includeInactive') === 'true';
 
-  const allProducts = normalizeProducts(
-    await readJSON<Product[]>(PRODUCTS_FILE, []),
-  );
+  const allProducts = await loadAllProducts();
 
   const filtered = allProducts.filter(
     (product) =>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import modifiers from '../../../../data/modifiers.json';
+import { readModifiers } from '@/lib/modifier_manager';
 
-export function GET() {
-  const payload = Array.isArray(modifiers) ? modifiers : [];
-  return NextResponse.json({ modifiers: payload });
+export async function GET() {
+  const modifiers = await readModifiers();
+  return NextResponse.json({ modifiers });
 }
