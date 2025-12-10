@@ -77,6 +77,11 @@ async function writeDailyOrders(date: string, orders: Order[]): Promise<void> {
   await writeJSON(ordersFilePath(date), orders);
 }
 
+function parseOrderDate(orderNumber: string): string | null {
+  const match = orderNumber.match(/^(\d{4}-\d{2}-\d{2})-/);
+  return match ? match[1] : null;
+}
+
 export async function appendOrderFromDraft(draft: OrderDraft): Promise<Order> {
   const date = formatDate();
   const { orderNumber, ticketNumber } = await nextOrderIdentifiers(date);
@@ -137,4 +142,27 @@ export async function getOrderByOrderNumber(orderNumber: string): Promise<Order 
   }
 
   return null;
+}
+
+export async function markKitchenOrderCompleted(orderNumber: string): Promise<Order | null> {
+  const date = parseOrderDate(orderNumber) ?? formatDate();
+  const orders = await readDailyOrders(date);
+  const index = orders.findIndex((order) => order.orderNumber === orderNumber);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedOrder: Order = {
+    ...orders[index],
+    kitchenStatus: 'DONE',
+    kitchenCompletedAt: new Date().toISOString(),
+  };
+
+  const updatedOrders = [...orders];
+  updatedOrders[index] = updatedOrder;
+
+  await writeDailyOrders(date, updatedOrders);
+
+  return updatedOrder;
 }
