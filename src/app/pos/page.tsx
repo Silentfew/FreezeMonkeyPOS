@@ -2,8 +2,26 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCategories, Category } from '@/lib/categories-store';
-import { fetchProducts, Product } from '@/lib/products-store';
+
+import type { Product as DomainProduct } from '@/domain/models/product';
+
+type Category = {
+  id: string;
+  name: string;
+  order?: number;
+};
+
+type Product = DomainProduct & {
+  hasModifiers?: boolean;
+  basePriceCents?: number;
+};
+
+type Modifier = {
+  id: string;
+  name: string;
+  price: number;
+  action: 'add' | 'remove';
+};
 
 const CATEGORY_DETAILS: Record<string, { title: string; icon: string }> = {
   '1': { title: 'Burgers', icon: '🍔' },
@@ -52,6 +70,18 @@ type PosProduct = Product & { basePriceCents?: number };
 
 function formatCurrencyFromCents(amountCents: number) {
   return `$${(amountCents / 100).toFixed(2)}`;
+}
+
+async function fetchCatalog(): Promise<{
+  categories: Category[];
+  products: Product[];
+  modifiers: Modifier[];
+}> {
+  const res = await fetch('/api/catalog');
+  if (!res.ok) {
+    throw new Error('Failed to load catalog');
+  }
+  return res.json();
 }
 
 interface PaymentOverlayProps {
@@ -266,6 +296,7 @@ export default function PosPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [allProducts, setAllProducts] = useState<PosProduct[]>([]);
   const [products, setProducts] = useState<PosProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [offline, setOffline] = useState(false);
@@ -281,42 +312,58 @@ export default function PosPage() {
   const [cashGiven, setCashGiven] = useState<string>('');
   const [discountMode, setDiscountMode] = useState<'NONE' | 'PERCENT' | 'FLAT'>('NONE');
   const [discountInput, setDiscountInput] = useState<string>('');
+  const [, setModifiers] = useState<Modifier[]>([]);
 
   useEffect(() => {
-    const loadCategories = async () => {
+    let cancelled = false;
+
+    const loadCatalog = async () => {
+      setLoadingProducts(true);
       try {
-        const loaded = await fetchCategories();
-        setCategories(loaded);
-        if (loaded.length > 0) {
-          setSelectedCategoryId(loaded[0].id);
-        }
+        const { categories: loadedCategories, products: loadedProducts, modifiers } = await fetchCatalog();
+        if (cancelled) return;
+
+        const normalizedProducts = loadedProducts.map((product) => ({
+          ...product,
+          basePriceCents:
+            typeof product.basePriceCents === 'number'
+              ? product.basePriceCents
+              : Math.round(product.price * 100),
+        }));
+
+        setCategories(loadedCategories);
+        setAllProducts(normalizedProducts);
+        setSelectedCategoryId(loadedCategories[0]?.id ?? null);
+        setModifiers(modifiers ?? []);
+        setOffline(false);
       } catch (error) {
-        console.error('Failed to load categories', error);
-        setOffline(true);
+        if (!cancelled) {
+          console.error('Failed to load catalog', error);
+          setOffline(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingProducts(false);
+        }
       }
     };
-    loadCategories();
+
+    loadCatalog();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!selectedCategoryId) return;
+    if (!selectedCategoryId) {
+      setProducts(allProducts);
+      return;
+    }
 
-    const loadProducts = async () => {
-      setLoadingProducts(true);
-      try {
-        const loaded = await fetchProducts(selectedCategoryId);
-        setProducts(loaded);
-        setOffline(false);
-      } catch (error) {
-        console.error('Failed to load products', error);
-        setOffline(true);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-
-    loadProducts();
-  }, [selectedCategoryId]);
+    const filtered = allProducts.filter((product) => product.categoryId === selectedCategoryId);
+    setProducts(filtered);
+  }, [allProducts, selectedCategoryId]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
