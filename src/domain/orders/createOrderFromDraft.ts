@@ -83,5 +83,6 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
     payments,
     discountCents,
     ticketNumber: context.ticketNumber,
+    kitchenStatus: 'OPEN',
   };
 }
