@@ -99,6 +99,10 @@ export async function getOrdersForDate(date: string): Promise<Order[]> {
   return readDailyOrders(date);
 }
 
+export async function saveOrdersForDate(date: string, orders: Order[]): Promise<void> {
+  await writeDailyOrders(date, orders);
+}
+
 export async function getOrdersBetween(startDate: string, endDate: string): Promise<Order[]> {
   const orders: Order[] = [];
 
