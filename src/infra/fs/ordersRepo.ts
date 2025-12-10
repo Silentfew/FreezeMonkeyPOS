@@ -80,7 +80,7 @@ async function writeDailyOrders(date: string, orders: Order[]): Promise<void> {
 export async function appendOrderFromDraft(draft: OrderDraft): Promise<Order> {
   const date = formatDate();
   const { orderNumber, ticketNumber } = await nextOrderIdentifiers(date);
-  const order = createOrderFromDraft(draft, {
+  const order = await createOrderFromDraft(draft, {
     orderNumber,
     createdAt: new Date().toISOString(),
     ticketNumber,

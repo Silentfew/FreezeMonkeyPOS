@@ -4,4 +4,5 @@ export interface Product {
   price: number;
   categoryId: string;
   active?: boolean;
+  prepMinutes?: number;
 }

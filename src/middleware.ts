@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
   }
 
   const requiresAuth =
-    pathname.startsWith("/pos") || pathname.startsWith("/admin");
+    pathname.startsWith("/pos") || pathname.startsWith("/admin") || pathname.startsWith("/kitchen");
 
   const isAdminRoute = pathname.startsWith("/admin");
 
@@ -47,5 +47,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login", "/pos/:path*", "/admin/:path*"],
+  matcher: ["/login", "/pos/:path*", "/admin/:path*", "/kitchen/:path*"],
 };
