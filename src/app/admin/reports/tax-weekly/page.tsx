@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { TaxSummary } from '@/domain/orders/taxSummary';
-import { AdminNav } from '@/components/AdminNav';
+import { AdminHeader } from '@/components/AdminHeader';
 
 interface ReportResponse {
   range: { startDate: string; endDate: string };
@@ -95,6 +95,7 @@ export default function WeeklyTaxReportPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+      <AdminHeader />
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -102,7 +103,6 @@ export default function WeeklyTaxReportPage() {
             <h1 className="text-3xl font-black text-[#E9F9FF]">Weekly Tax Report</h1>
             <p className="text-sm text-white/70">Review GST totals for any seven-day window.</p>
           </div>
-          <AdminNav />
         </div>
 
         <div className="rounded-2xl bg-white/5 p-5 shadow-lg ring-1 ring-white/10">

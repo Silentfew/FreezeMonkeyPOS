@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminNav } from '@/components/AdminNav';
+import { AdminHeader } from '@/components/AdminHeader';
 
 type CloseoutSummary = {
   orderCount: number;
@@ -75,6 +75,7 @@ export default function DailyCloseoutReportPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+      <AdminHeader />
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -82,7 +83,6 @@ export default function DailyCloseoutReportPage() {
             <h1 className="text-3xl font-black text-[#E9F9FF]">Daily Closeout</h1>
             <p className="text-sm text-white/70">Review payments, tax, and discounts for a single day.</p>
           </div>
-          <AdminNav />
         </div>
 
         <div className="rounded-2xl bg-white/5 p-5 shadow-lg ring-1 ring-white/10">
