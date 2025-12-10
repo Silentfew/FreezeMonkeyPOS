@@ -1,12 +1,19 @@
+import fs from 'fs/promises';
 import path from 'path';
 import { Order } from '@/domain/models/order';
 import { createOrderFromDraft, OrderDraft } from '@/domain/orders/createOrderFromDraft';
 import { readJSON, writeJSON } from './jsonStore';
 
+interface DayCounters {
+  lastOrderNumber: number;
+  lastTicketNumber?: number;
+}
+
 interface Counters {
   orders: {
     lastDate: string;
     lastSequence: number;
+    days?: Record<string, DayCounters>;
   };
 }
 
@@ -16,6 +23,7 @@ const defaultCounters: Counters = {
   orders: {
     lastDate: '',
     lastSequence: 0,
+    days: {},
   },
 };
 
@@ -24,22 +32,37 @@ export function formatDate(date: Date = new Date()): string {
 }
 
 async function getCounters(): Promise<Counters> {
-  return readJSON<Counters>(COUNTERS_FILE, defaultCounters);
+  const counters = await readJSON<Counters>(COUNTERS_FILE, defaultCounters);
+  if (!counters.orders.days) {
+    counters.orders.days = {};
+  }
+  return counters;
 }
 
 async function persistCounters(counters: Counters): Promise<void> {
   await writeJSON(COUNTERS_FILE, counters);
 }
 
-async function nextOrderNumber(date: string): Promise<string> {
+async function nextOrderIdentifiers(date: string): Promise<{ orderNumber: string; ticketNumber: number }> {
   const counters = await getCounters();
-  const sequence = counters.orders.lastDate === date ? counters.orders.lastSequence + 1 : 1;
+  const dayCounters: DayCounters = counters.orders.days?.[date] ?? {
+    lastOrderNumber: counters.orders.lastDate === date ? counters.orders.lastSequence : 0,
+    lastTicketNumber: 0,
+  };
+
+  const nextOrderNumber = dayCounters.lastOrderNumber + 1;
+  const nextTicketNumber = (dayCounters.lastTicketNumber ?? 0) + 1;
+
+  dayCounters.lastOrderNumber = nextOrderNumber;
+  dayCounters.lastTicketNumber = nextTicketNumber;
 
   counters.orders.lastDate = date;
-  counters.orders.lastSequence = sequence;
+  counters.orders.lastSequence = nextOrderNumber;
+  counters.orders.days = { ...(counters.orders.days ?? {}), [date]: dayCounters };
+
   await persistCounters(counters);
 
-  return `${date}-${sequence.toString().padStart(4, '0')}`;
+  return { orderNumber: `${date}-${nextOrderNumber.toString().padStart(4, '0')}`, ticketNumber: nextTicketNumber };
 }
 
 function ordersFilePath(date: string): string {
@@ -56,8 +79,12 @@ async function writeDailyOrders(date: string, orders: Order[]): Promise<void> {
 
 export async function appendOrderFromDraft(draft: OrderDraft): Promise<Order> {
   const date = formatDate();
-  const orderNumber = await nextOrderNumber(date);
-  const order = createOrderFromDraft(draft, { orderNumber, createdAt: new Date().toISOString() });
+  const { orderNumber, ticketNumber } = await nextOrderIdentifiers(date);
+  const order = createOrderFromDraft(draft, {
+    orderNumber,
+    createdAt: new Date().toISOString(),
+    ticketNumber,
+  });
   const existing = await readDailyOrders(date);
   await writeDailyOrders(date, [...existing, order]);
   return order;
@@ -85,4 +112,29 @@ export async function getOrdersBetween(startDate: string, endDate: string): Prom
   }
 
   return orders;
+}
+
+async function findOrderInFile(file: string, orderNumber: string): Promise<Order | null> {
+  const orders = await readJSON<Order[]>(path.join(ORDERS_DIR, file), []);
+  return orders.find((order) => order.orderNumber === orderNumber) ?? null;
+}
+
+export async function getOrderByOrderNumber(orderNumber: string): Promise<Order | null> {
+  const today = formatDate();
+  const todayOrders = await readDailyOrders(today);
+  const todayMatch = todayOrders.find((order) => order.orderNumber === orderNumber);
+  if (todayMatch) return todayMatch;
+
+  try {
+    const files = await fs.readdir(path.join(process.cwd(), 'data', ORDERS_DIR));
+    for (const file of files) {
+      if (!file.endsWith('.json') || file === `${today}.json`) continue;
+      const match = await findOrderInFile(file, orderNumber);
+      if (match) return match;
+    }
+  } catch (error) {
+    console.error('Failed to locate order by orderNumber', error);
+  }
+
+  return null;
 }

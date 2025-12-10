@@ -271,6 +271,8 @@ export default function PosPage() {
   const [offline, setOffline] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [lastOrderNumber, setLastOrderNumber] = useState<string | null>(null);
+  const [lastTicketNumber, setLastTicketNumber] = useState<number | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -453,6 +455,8 @@ export default function PosPage() {
     setIsSubmitting(true);
     setStatusMessage(null);
     setLastOrderId(null);
+    setLastOrderNumber(null);
+    setLastTicketNumber(null);
 
     try {
       let paymentChangeCents = paymentType === 'CASH' ? changeCents ?? 0 : undefined;
@@ -500,12 +504,15 @@ export default function PosPage() {
 
       const data = await response.json();
       const orderId: string = data?.orderNumber ?? data?.id ?? null;
+      const ticketNumber: number | null = typeof data?.ticketNumber === 'number' ? data.ticketNumber : null;
       setLastOrderId(orderId);
-      setStatusMessage(
-        orderId
-          ? `Rift Deployed – Ticket ${orderId} logged in the Codex.`
-          : 'Rift Deployed – Ticket logged in the Codex.',
-      );
+      setLastOrderNumber(orderId);
+      setLastTicketNumber(ticketNumber);
+      if (ticketNumber != null) {
+        setStatusMessage(`Ticket #${ticketNumber} deployed.`);
+      } else {
+        setStatusMessage('Order deployed.');
+      }
       if (orderId) {
         window.open(`/receipt/${orderId}`, '_blank');
       }
@@ -848,10 +855,24 @@ export default function PosPage() {
                 Last order: {lastOrderId}
               </div>
             )}
+            {lastTicketNumber != null && (
+              <div className="rounded-xl bg-[#FFE561]/20 px-3 py-2 text-xs font-semibold text-[#FFE561]">
+                Ticket #{lastTicketNumber}
+              </div>
+            )}
             {statusMessage && (
               <div className="rounded-xl bg-black/30 px-3 py-2 text-sm font-semibold text-white">
                 {statusMessage}
               </div>
+            )}
+            {lastOrderNumber && (
+              <button
+                type="button"
+                onClick={() => window.open(`/kitchen-receipt/${lastOrderNumber}`, '_blank')}
+                className="mt-2 w-full rounded-full bg-[#FFE561] px-3 py-2 text-xs font-semibold text-[#0b1222]"
+              >
+                Print Kitchen Copy
+              </button>
             )}
             <button
               type="button"

@@ -1,35 +1,9 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { buildReceiptLines } from '@/domain/orders/receipt';
-import type { Order } from '@/domain/models/order';
-import { formatDate, getOrdersForDate } from '@/infra/fs/ordersRepo';
-import { readJSON } from '@/infra/fs/jsonStore';
-
-const ordersDir = path.join(process.cwd(), 'data', 'orders');
-
-async function findOrder(orderNumber: string): Promise<Order | null> {
-  const todayOrders = await getOrdersForDate(formatDate());
-  const matchToday = todayOrders.find((order) => order.orderNumber === orderNumber);
-  if (matchToday) return matchToday;
-
-  try {
-    const files = await fs.readdir(ordersDir);
-    for (const file of files) {
-      if (!file.endsWith('.json')) continue;
-      const orders = await readJSON<Order[]>(path.join('orders', file), []);
-      const found = orders.find((order) => order.orderNumber === orderNumber);
-      if (found) return found;
-    }
-  } catch (error) {
-    console.error('Failed to search for receipt order', error);
-  }
-
-  return null;
-}
+import { getOrderByOrderNumber } from '@/infra/fs/ordersRepo';
 
 export default async function ReceiptPage({ params }: { params: { orderNumber: string } }) {
   const orderNumber = decodeURIComponent(params.orderNumber);
-  const order = await findOrder(orderNumber);
+  const order = await getOrderByOrderNumber(orderNumber);
 
   if (!order) {
     return (
@@ -42,6 +16,7 @@ export default async function ReceiptPage({ params }: { params: { orderNumber: s
   }
 
   const lines = buildReceiptLines(order);
+  const ticketLabel = order.ticketNumber ?? order.orderNumber;
 
   return (
     <html>
@@ -50,6 +25,12 @@ export default async function ReceiptPage({ params }: { params: { orderNumber: s
       </head>
       <body style={{ fontFamily: 'monospace', padding: '24px', color: '#111', background: '#fff' }}>
         <main style={{ maxWidth: '320px' }}>
+          <div style={{ marginBottom: '8px', fontWeight: 700, fontSize: '13px' }}>
+            <div>Ticket: {ticketLabel}</div>
+            <div style={{ fontWeight: 500, fontSize: '12px' }}>
+              {new Date(order.createdAt).toLocaleString()}
+            </div>
+          </div>
           {lines.map((line, index) => {
             if (line.type === 'separator') {
               return (

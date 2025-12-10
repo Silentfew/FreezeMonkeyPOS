@@ -21,6 +21,7 @@ export interface OrderDraft {
 interface BuildContext {
   orderNumber: string;
   createdAt?: string;
+  ticketNumber?: number;
 }
 
 function normalizeModifiers(modifiers: Modifier[]): Modifier[] {
@@ -81,5 +82,6 @@ export function createOrderFromDraft(draft: OrderDraft, context: BuildContext): 
     note: draft.note,
     payments,
     discountCents,
+    ticketNumber: context.ticketNumber,
   };
 }
