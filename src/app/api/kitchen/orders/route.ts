@@ -28,7 +28,8 @@ export async function GET() {
       .filter((order) => {
         const status = order.status;
         const isClosed = status ? CLOSED_STATUSES.has(status) : false;
-        return order.kitchenStatus !== 'DONE' && !isClosed;
+        const isCompleted = Boolean(order.kitchenCompletedAt);
+        return order.kitchenStatus !== 'DONE' && !isClosed && !isCompleted;
       })
       .sort(sortOrdersByTicketAndTime);
 

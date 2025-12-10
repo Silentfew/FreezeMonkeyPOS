@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OrderItem } from '@/domain/models/order';
 
 interface KitchenOrder {
@@ -85,38 +85,63 @@ function getSortTimestamp(order: KitchenOrder) {
 export default function KitchenClient() {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    setNow(new Date());
+
+    const id = setInterval(() => {
+      setNow(new Date());
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const response = await fetch('/api/kitchen/orders', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data: KitchenApiResponse = await response.json();
+      setOrders(Array.isArray(data?.orders) ? data.orders : []);
+    } catch (error) {
+      console.error('Failed to load kitchen orders', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     let active = true;
 
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch('/api/kitchen/orders', { cache: 'no-store' });
-        if (!response.ok) return;
-        const data: KitchenApiResponse = await response.json();
-        if (!active) return;
-        setOrders(Array.isArray(data?.orders) ? data.orders : []);
-      } catch (error) {
-        console.error('Failed to load kitchen orders', error);
-      } finally {
-        if (active) setLoading(false);
-      }
+    const wrappedFetch = async () => {
+      if (!active) return;
+      await fetchOrders();
     };
 
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
+    wrappedFetch();
+    const interval = setInterval(wrappedFetch, 5000);
 
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchOrders]);
+
+  const handleComplete = useCallback(
+    async (orderNumber: number | string) => {
+      try {
+        await fetch('/api/kitchen/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderNumber }),
+        });
+        await fetchOrders();
+      } catch (error) {
+        console.error('Failed to mark order as complete', error);
+      }
+    },
+    [fetchOrders],
+  );
 
   const sortedOrders = useMemo(
     () =>
@@ -132,6 +157,8 @@ export default function KitchenClient() {
     [orders],
   );
 
+  const nowMs = now?.getTime() ?? Date.now();
+
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <header className="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -141,7 +168,15 @@ export default function KitchenClient() {
           <p className="text-sm text-white/60">Auto-refreshes every 5 seconds</p>
         </div>
         <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-white/70 ring-1 ring-white/10">
-          {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <div suppressHydrationWarning>
+            {now
+              ? now.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })
+              : ''}
+          </div>
         </div>
       </header>
 
@@ -156,7 +191,7 @@ export default function KitchenClient() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {sortedOrders.map((order) => {
-            const countdown = formatCountdown(order, now);
+            const countdown = formatCountdown(order, nowMs);
 
             return (
               <div
@@ -196,6 +231,12 @@ export default function KitchenClient() {
                     <span>Live</span>
                   )}
                 </div>
+                <button
+                  className="mt-4 w-full rounded-xl bg-emerald-500/20 px-4 py-3 text-lg font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+                  onClick={() => handleComplete(order.orderNumber)}
+                >
+                  Mark Complete
+                </button>
               </div>
             );
           })}

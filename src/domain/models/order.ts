@@ -40,4 +40,5 @@ export interface Order {
   kitchenStatus?: KitchenStatus;
   estimatedPrepMinutes?: number;
   targetReadyAt?: string;
+  kitchenCompletedAt?: string;
 }
