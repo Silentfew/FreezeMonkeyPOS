@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PinUser } from '@/domain/models/settings';
-import { AdminNav } from '@/components/AdminNav';
+import { AdminHeader } from '@/components/AdminHeader';
 
 function createEmptyPin(): PinUser {
   return { name: '', pin: '', role: 'STAFF' };
@@ -77,15 +77,15 @@ export default function StaffAdminPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+      <AdminHeader />
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
             <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Staff Pins</h1>
             <p className="text-sm text-white/70">Add, edit, or remove staff access pins.</p>
           </div>
           <div className="flex flex-wrap items-center gap-3 justify-end">
-            <AdminNav />
             <button
               type="button"
               onClick={addPin}

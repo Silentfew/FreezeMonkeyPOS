@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Product } from '@/domain/models/product';
-import { AdminNav } from '@/components/AdminNav';
+import { AdminHeader } from '@/components/AdminHeader';
 
 function createEmptyProduct(): Product {
   return {
@@ -95,32 +95,30 @@ export default function AdminProductsPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+      <AdminHeader />
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
             <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Products</h1>
             <p className="text-sm text-white/70">Add, edit, or deactivate products for the POS.</p>
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <AdminNav />
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={addProduct}
-                className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
-              >
-                + Add product
-              </button>
-              <button
-                type="button"
-                onClick={saveProducts}
-                disabled={saving}
-                className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
-            </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={addProduct}
+              className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
+            >
+              + Add product
+            </button>
+            <button
+              type="button"
+              onClick={saveProducts}
+              disabled={saving}
+              className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
           </div>
         </div>
 
