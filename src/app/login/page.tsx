@@ -29,16 +29,19 @@ export default function LoginPage() {
         });
 
         if (!response.ok) {
-          await response.json();
+          const errorPayload = await response.json().catch(() => null);
           setError(
-            "Access Denied – That Frost Code doesn’t match any registered keeper.",
+            errorPayload?.error ??
+              "Access Denied – That Frost Code doesn’t match any registered keeper.",
           );
           return;
         }
 
-        const keeperName = "Keeper";
+        const payload = await response.json();
+        const keeperName = typeof payload?.user?.name === "string" ? payload.user.name : "Keeper";
+        const keeperRole = typeof payload?.user?.role === "string" ? payload.user.role : "Crew";
         setSuccess(
-          `Access Granted – Welcome back, ${keeperName}. Stormfront is standing by.`,
+          `Access Granted – Welcome back, ${keeperName} (${keeperRole}). Stormfront is standing by.`,
         );
         setTimeout(() => router.push("/pos"), 500);
       } catch (requestError) {

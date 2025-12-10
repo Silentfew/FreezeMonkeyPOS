@@ -3,9 +3,12 @@ import { cookies } from "next/headers";
 import { readProducts } from "@/lib/products-store";
 import { readCategories } from "@/lib/categories-store";
 import { readModifiers } from "@/lib/modifier_manager";
+import { parseSessionCookie, SESSION_COOKIE } from "@/lib/session";
 
 function isAuthenticated(): boolean {
-  return Boolean(cookies().get("pos_session")?.value);
+  const raw = cookies().get(SESSION_COOKIE)?.value;
+  const session = parseSessionCookie(raw);
+  return Boolean(session?.role);
 }
 
 export async function GET() {

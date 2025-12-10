@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+import { SessionUser } from '@/lib/session';
+
 import type { Product as DomainProduct } from '@/domain/models/product';
 
 type Category = {
@@ -27,6 +29,7 @@ type PosClientProps = {
   categories: Category[];
   products: Product[];
   modifiers: Modifier[];
+  currentUser?: SessionUser | null;
 };
 
 const CATEGORY_DETAILS: Record<string, { title: string; icon: string }> = {
@@ -286,7 +289,11 @@ function PaymentOverlay({
   );
 }
 
-export default function PosClient({ categories: initialCategories, products: initialProducts }: PosClientProps) {
+export default function PosClient({
+  categories: initialCategories,
+  products: initialProducts,
+  currentUser,
+}: PosClientProps) {
   const router = useRouter();
   const normalizedProducts = useMemo(
     () =>
@@ -320,6 +327,7 @@ export default function PosClient({ categories: initialCategories, products: ini
   const [cashGiven, setCashGiven] = useState<string>('');
   const [discountMode, setDiscountMode] = useState<'NONE' | 'PERCENT' | 'FLAT'>('NONE');
   const [discountInput, setDiscountInput] = useState<string>('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!selectedCategoryId) {
@@ -552,6 +560,29 @@ export default function PosClient({ categories: initialCategories, products: ini
     if (document.exitFullscreen) await document.exitFullscreen();
   };
 
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setStatusMessage('Logging out...');
+    try {
+      const response = await fetch('/api/logout', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Failed to logout');
+      }
+      await response.json().catch(() => null);
+      router.push('/login');
+    } catch (error) {
+      console.error(error);
+      setStatusMessage('Logout failed. Please try again.');
+      setIsLoggingOut(false);
+    }
+  };
+
+  const isOwner = currentUser?.role === 'OWNER';
+  const userLabel = currentUser
+    ? `${currentUser.name} (${currentUser.role})`
+    : 'Unknown user';
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6 lg:flex-row">
@@ -566,20 +597,34 @@ export default function PosClient({ categories: initialCategories, products: ini
                 <h1 className="text-2xl font-black text-[#E9F9FF]">Stormfront Counter · Frostoria Outpost</h1>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => router.push('/admin/products')}
-                className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
-              >
-                Rift Control
-              </button>
+            <div className="flex flex-wrap items-center justify-end gap-3 text-right">
+              <div className="text-right">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#E9F9FF]/60">Logged in</p>
+                <p className="text-sm font-semibold text-[#E9F9FF]">{userLabel}</p>
+              </div>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/admin/products')}
+                  className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
+                >
+                  Rift Control
+                </button>
+              )}
               <button
                 type="button"
                 onClick={isFullscreen ? exitFullscreen : enterFullscreen}
                 className="rounded-full bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#2ad2ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00C2FF]"
               >
                 {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-black shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-rose-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-60"
+              >
+                {isLoggingOut ? 'Logging out...' : 'Logout'}
               </button>
               <div
                 className={`rounded-full px-4 py-2 text-sm font-semibold ${offline ? 'bg-red-500/20 text-red-200' : 'bg-green-500/20 text-green-100'}`}

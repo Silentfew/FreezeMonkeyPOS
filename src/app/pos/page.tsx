@@ -5,6 +5,7 @@ import type { Product } from '@/lib/products-store';
 import { readProducts } from '@/lib/products-store';
 import type { Modifier } from '@/lib/modifier_manager';
 import { readModifiers } from '@/lib/modifier_manager';
+import { getSessionUser } from '@/lib/session';
 
 export default async function PosPage() {
   const [categories, products, modifiers] = await Promise.all<[
@@ -18,11 +19,14 @@ export default async function PosPage() {
     basePriceCents: Math.round(product.price * 100),
   }));
 
+  const currentUser = getSessionUser();
+
   return (
     <PosClient
       categories={categories}
       products={productsWithBasePrice}
       modifiers={modifiers}
+      currentUser={currentUser}
     />
   );
 }
