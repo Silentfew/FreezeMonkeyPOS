@@ -28,8 +28,7 @@ export function buildReceiptLines(order: Order): ReceiptLine[] {
   lines.push({ type: 'separator', value: '------------------------------' });
 
   const subtotal = toCents(order.totals?.subtotal ?? 0);
-  const tax = toCents(order.totals?.tax ?? 0);
-  const total = toCents(order.totals?.total ?? subtotal + tax);
+  const total = toCents(order.totals?.total ?? subtotal);
 
   lines.push({ type: 'text', value: `Subtotal: $${(subtotal / 100).toFixed(2)}` });
   if (order.discountCents && order.discountCents > 0) {
@@ -38,8 +37,8 @@ export function buildReceiptLines(order: Order): ReceiptLine[] {
       value: `Discount: -$${(order.discountCents / 100).toFixed(2)}`,
     });
   }
-  lines.push({ type: 'text', value: `GST: $${(tax / 100).toFixed(2)}` });
   lines.push({ type: 'total', value: `TOTAL: $${(total / 100).toFixed(2)}` });
+  lines.push({ type: 'text', value: `Non-GST mode (sole trader)` });
 
   return lines;
 }

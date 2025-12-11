@@ -25,17 +25,11 @@ type Modifier = {
   action: 'add' | 'remove';
 };
 
-type PricingConfig = {
-  pricesIncludeTax: boolean;
-  gstRatePercent: number;
-};
-
 type PosClientProps = {
   categories: Category[];
   products: Product[];
   modifiers: Modifier[];
   currentUser?: SessionUser | null;
-  pricing: PricingConfig;
 };
 
 const CATEGORY_DETAILS: Record<string, { title: string; icon: string }> = {
@@ -93,8 +87,6 @@ interface PaymentOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   totalCents: number;
-  discountedSubtotalCents: number;
-  taxCents: number;
   paymentType: PaymentType;
   setPaymentType: (type: PaymentType) => void;
   cashGiven: string;
@@ -107,8 +99,6 @@ function PaymentOverlay({
   isOpen,
   onClose,
   totalCents,
-  discountedSubtotalCents,
-  taxCents,
   paymentType,
   setPaymentType,
   cashGiven,
@@ -158,7 +148,7 @@ function PaymentOverlay({
             <p className="text-xs uppercase tracking-[0.25em] text-[#E9F9FF]/60">Payment</p>
             <h2 className="text-2xl font-black text-[#E9F9FF]">Rift Checkout</h2>
             <p className="text-sm text-[#A0B4D8]">Amount due: {formatCurrencyFromCents(totalCents)}</p>
-            <p className="text-xs text-[#A0B4D8]">Taxable: {formatCurrencyFromCents(discountedSubtotalCents)} · GST: {formatCurrencyFromCents(taxCents)}</p>
+            <p className="text-xs text-[#A0B4D8]">Currently operating in Non-GST mode (sole trader).</p>
           </div>
           <button
             type="button"
@@ -297,12 +287,7 @@ function PaymentOverlay({
   );
 }
 
-export default function PosClient({
-  categories: initialCategories,
-  products: initialProducts,
-  currentUser,
-  pricing,
-}: PosClientProps) {
+export default function PosClient({ categories: initialCategories, products: initialProducts, currentUser }: PosClientProps) {
   const router = useRouter();
   const normalizedProducts = useMemo(
     () =>
@@ -366,9 +351,7 @@ export default function PosClient({
     [cart],
   );
 
-  const ratePercent = pricing.gstRatePercent ?? 15;
-
-  const { discountCents, discountedSubtotalCents, taxCents, totalCents } = useMemo(() => {
+  const { discountCents, discountedSubtotalCents, totalCents } = useMemo(() => {
     let computedDiscountCents = 0;
 
     if (discountMode !== 'NONE' && discountInput.trim() !== '') {
@@ -388,27 +371,12 @@ export default function PosClient({
 
     const discountedSubtotal = subtotalCents - computedDiscountCents;
 
-    if (pricing.pricesIncludeTax) {
-      const subtotalExTax = Math.round(discountedSubtotal / (1 + ratePercent / 100));
-      const computedTaxCents = discountedSubtotal - subtotalExTax;
-      return {
-        discountCents: computedDiscountCents,
-        discountedSubtotalCents: subtotalExTax,
-        taxCents: computedTaxCents,
-        totalCents: discountedSubtotal,
-      };
-    }
-
-    const computedTaxCents = Math.round(discountedSubtotal * (ratePercent / 100));
-    const total = discountedSubtotal + computedTaxCents;
-
     return {
       discountCents: computedDiscountCents,
       discountedSubtotalCents: discountedSubtotal,
-      taxCents: computedTaxCents,
-      totalCents: total,
+      totalCents: discountedSubtotal,
     };
-  }, [discountInput, discountMode, pricing.pricesIncludeTax, ratePercent, subtotalCents]);
+  }, [discountInput, discountMode, subtotalCents]);
 
   const { givenCents, changeCents } = useMemo(() => {
     let computedGiven: number | undefined;
@@ -936,7 +904,7 @@ export default function PosClient({
 
             <div className="mt-2 space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-[#A0B4D8]">Subtotal</span>
+                <span className="text-[#A0B4D8]">Frost Subtotal</span>
                 <span>${(subtotalCents / 100).toFixed(2)}</span>
               </div>
               {discountCents > 0 && (
@@ -946,19 +914,15 @@ export default function PosClient({
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-[#A0B4D8]">Taxable after discount</span>
+                <span className="text-[#A0B4D8]">Subtotal after discount</span>
                 <span>${(discountedSubtotalCents / 100).toFixed(2)}</span>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between text-sm text-[#E9F9FF]/80">
-              <span>Earthrealm Tax</span>
-              <span>{formatCurrencyFromCents(taxCents)}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-2 text-lg font-black text-[#FFE561]">
               <span>Stormfront Total</span>
               <span>{formatCurrencyFromCents(totalCents)}</span>
             </div>
+            <p className="text-[11px] text-[#A0B4D8]">Currently operating in Non-GST mode (sole trader).</p>
             {lastOrderId && (
               <div className="rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white/80">
                 Last order: {lastOrderId}
@@ -999,8 +963,6 @@ export default function PosClient({
           isOpen={isPaymentOpen}
           onClose={() => setIsPaymentOpen(false)}
           totalCents={totalCents}
-          discountedSubtotalCents={discountedSubtotalCents}
-          taxCents={taxCents}
           paymentType={paymentType}
           setPaymentType={setPaymentType}
           cashGiven={cashGiven}

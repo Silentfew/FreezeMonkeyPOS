@@ -1,7 +1,7 @@
 {
   "currency": "USD",
   "pricesIncludeTax": true,
-  "gstRatePercent": 15,
+  "gstRatePercent": 0,
   "kitchenPrepMinutes": 7,
   "pins": [],
   "kitchen": {

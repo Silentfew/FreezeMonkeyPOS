@@ -1,9 +1,5 @@
 import { Modifier } from '@/lib/modifier_manager';
-import {
-  OrderItem as DraftOrderItem,
-  calculateItemTotal,
-  calculateTotals,
-} from '@/lib/order_manager';
+import { OrderItem as DraftOrderItem, calculateItemTotal } from '@/lib/order_manager';
 import { Order, OrderItem, OrderTotals } from '../models/order';
 import type { Payment } from '../models/order';
 import { loadSettings } from '@/infra/fs/settingsRepo';
@@ -42,11 +38,6 @@ function buildItems(items: DraftOrderItem[]): OrderItem[] {
   }));
 }
 
-function toPercent(taxRate?: number): number | undefined {
-  if (typeof taxRate !== 'number') return undefined;
-  return taxRate > 1 ? taxRate : taxRate * 100;
-}
-
 export async function createOrderFromDraft(
   draft: OrderDraft,
   context: BuildContext,
@@ -55,13 +46,23 @@ export async function createOrderFromDraft(
   const createdAt = context.createdAt ?? new Date().toISOString();
   const items = buildItems(draft.items);
   const settings = await loadSettings();
-  const gstRatePercent = toPercent(draft.taxRate) ?? settings.gstRatePercent ?? settings.taxRatePercent ?? 15;
-  const pricesIncludeTax = settings.pricesIncludeTax ?? false;
-  const totals = calculateTotals(draft.items, {
-    taxFree,
-    pricesIncludeTax,
-    gstRatePercent,
-  });
+  const baseSubtotalCents = draft.items.reduce(
+    (sum, item) => sum + Math.round(calculateItemTotal(item) * 100),
+    0,
+  );
+  const appliedDiscountCents =
+    typeof draft.discountCents === 'number' && draft.discountCents > 0
+      ? Math.min(draft.discountCents, baseSubtotalCents)
+      : 0;
+  const subtotalCents = Math.max(baseSubtotalCents - appliedDiscountCents, 0);
+  const taxCents = 0;
+  const totalCents = subtotalCents + taxCents;
+
+  const totals: OrderTotals = {
+    subtotal: subtotalCents / 100,
+    tax: taxCents / 100,
+    total: totalCents / 100,
+  };
 
   const payments =
     Array.isArray(draft.payments) && draft.payments.length > 0
@@ -82,10 +83,7 @@ export async function createOrderFromDraft(
         })
       : undefined;
 
-  const discountCents =
-    typeof draft.discountCents === 'number' && draft.discountCents > 0
-      ? draft.discountCents
-      : undefined;
+  const discountCents = appliedDiscountCents > 0 ? appliedDiscountCents : undefined;
 
   const orderBase: Order = {
     orderNumber: context.orderNumber,

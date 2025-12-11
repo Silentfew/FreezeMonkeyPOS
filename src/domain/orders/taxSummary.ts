@@ -1,16 +1,17 @@
 import type { Order } from '../models/order';
 import { isOrderTaxable } from '../models/order';
 
-export interface TaxSummary {
+export interface IncomeSummary {
+  fromDate: string;
+  toDate: string;
+  totalSalesCents: number;
   orderCount: number;
-  totalTaxableCents: number;
-  totalTaxCents: number;
-  totalGrossCents: number;
-  byPaymentType: {
-    CASH: number;
-    CARD: number;
-    OTHER: number;
+  payments: {
+    cashCents: number;
+    cardCents: number;
+    otherCents: number;
   };
+  discountCents?: number;
 }
 
 type PaymentType = 'CASH' | 'CARD' | 'OTHER';
@@ -26,26 +27,28 @@ function toCents(value: number | undefined): number {
   return Math.round(value * 100);
 }
 
-export function getTaxSummary(orders: Order[]): TaxSummary {
-  const summary: TaxSummary = {
+export function calculateIncomeSummary(orders: Order[], fromDate: string, toDate: string): IncomeSummary {
+  const summary: IncomeSummary = {
+    fromDate,
+    toDate,
     orderCount: 0,
-    totalTaxableCents: 0,
-    totalTaxCents: 0,
-    totalGrossCents: 0,
-    byPaymentType: {
-      CASH: 0,
-      CARD: 0,
-      OTHER: 0,
+    totalSalesCents: 0,
+    payments: {
+      cashCents: 0,
+      cardCents: 0,
+      otherCents: 0,
     },
+    discountCents: 0,
   };
 
   orders.filter(isOrderTaxable).forEach((order) => {
     summary.orderCount += 1;
-    const subtotal = toCents(order.totals?.subtotal ?? 0);
-    const tax = toCents(order.totals?.tax ?? 0);
-    summary.totalTaxableCents += subtotal;
-    summary.totalTaxCents += tax;
-    summary.totalGrossCents += subtotal + tax;
+    const total = toCents(order.totals?.total ?? 0);
+    summary.totalSalesCents += total;
+
+    if (typeof order.discountCents === 'number') {
+      summary.discountCents = (summary.discountCents ?? 0) + order.discountCents;
+    }
 
     const payments = Array.isArray((order as unknown as { payments?: PaymentLike[] }).payments)
       ? (order as unknown as { payments?: PaymentLike[] }).payments
@@ -57,9 +60,15 @@ export function getTaxSummary(orders: Order[]): TaxSummary {
       const amount = typeof payment.amountCents === 'number'
         ? payment.amountCents
         : toCents(payment.amount);
-      summary.byPaymentType[key] += amount;
+      if (key === 'CASH') summary.payments.cashCents += amount;
+      if (key === 'CARD') summary.payments.cardCents += amount;
+      if (key === 'OTHER') summary.payments.otherCents += amount;
     });
   });
+
+  if (summary.discountCents === 0) {
+    summary.discountCents = undefined;
+  }
 
   return summary;
 }
