@@ -6,8 +6,8 @@ import {
 } from '@/lib/order_manager';
 import { Order, OrderItem, OrderTotals } from '../models/order';
 import type { Payment } from '../models/order';
-import { estimateOrderPrepMinutes } from './estimatePrep';
-import { loadAllProducts } from '@/lib/products-store';
+import { loadSettings } from '@/infra/fs/settingsRepo';
+import { getKitchenEstimateMinutes } from './kitchenEstimate';
 
 export interface OrderDraft {
   items: DraftOrderItem[];
@@ -36,6 +36,7 @@ function buildItems(items: DraftOrderItem[]): OrderItem[] {
     name: item.name,
     basePrice: item.basePrice,
     quantity: item.quantity,
+    categoryId: item.categoryId,
     modifiers: normalizeModifiers(item.modifiers),
     lineTotal: calculateItemTotal(item),
   }));
@@ -78,13 +79,9 @@ export async function createOrderFromDraft(
       ? draft.discountCents
       : undefined;
 
-  const products = await loadAllProducts();
-  const estimatedPrepMinutes = estimateOrderPrepMinutes(items, products);
+  const settings = await loadSettings();
 
-  const targetReadyAtDate = new Date(createdAt);
-  targetReadyAtDate.setTime(targetReadyAtDate.getTime() + estimatedPrepMinutes * 60_000);
-
-  return {
+  const orderBase: Order = {
     orderNumber: context.orderNumber,
     createdAt,
     items,
@@ -95,6 +92,15 @@ export async function createOrderFromDraft(
     discountCents,
     ticketNumber: context.ticketNumber,
     kitchenStatus: 'OPEN',
+  };
+
+  const estimatedPrepMinutes = getKitchenEstimateMinutes(orderBase, settings);
+
+  const targetReadyAtDate = new Date(createdAt);
+  targetReadyAtDate.setTime(targetReadyAtDate.getTime() + estimatedPrepMinutes * 60_000);
+
+  return {
+    ...orderBase,
     estimatedPrepMinutes,
     targetReadyAt: targetReadyAtDate.toISOString(),
   };

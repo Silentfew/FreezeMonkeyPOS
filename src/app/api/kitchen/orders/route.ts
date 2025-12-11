@@ -1,22 +1,10 @@
 import { NextResponse } from 'next/server';
 import { Order } from '@/domain/models/order';
+import { getKitchenEstimateMinutes } from '@/domain/orders/kitchenEstimate';
 import { formatDate, getOrdersForDate, saveOrdersForDate } from '@/infra/fs/ordersRepo';
+import { loadSettings } from '@/infra/fs/settingsRepo';
 
 export const dynamic = 'force-dynamic';
-
-function getEstimateSeconds(order: Order): number | null {
-  if (order.targetReadyAt) {
-    const createdMs = new Date(order.createdAt).getTime();
-    const targetMs = new Date(order.targetReadyAt).getTime();
-    return Math.max(0, Math.round((targetMs - createdMs) / 1000));
-  }
-
-  if (typeof order.estimatedPrepMinutes === 'number') {
-    return Math.max(0, Math.round(order.estimatedPrepMinutes * 60));
-  }
-
-  return null;
-}
 
 function sortOrdersByTicketAndTime(a: Order, b: Order) {
   const ticketA = typeof a.ticketNumber === 'number' ? a.ticketNumber : Number.MAX_SAFE_INTEGER;
@@ -38,18 +26,23 @@ export async function GET() {
     const date = formatDate();
     const now = new Date();
     const nowMs = now.getTime();
-    const orders = await getOrdersForDate(date);
+    const [orders, settings] = await Promise.all([getOrdersForDate(date), loadSettings()]);
 
     let hasChanges = false;
 
     const updatedOrders = orders.map((order) => {
       if (order.kitchenCompletedAt) return order;
 
-      const estimateSeconds = getEstimateSeconds(order);
-      if (estimateSeconds === null) return order;
+      const created = new Date(order.createdAt);
+      const elapsedSeconds = (nowMs - created.getTime()) / 1000;
 
-      const elapsedSeconds = Math.round((nowMs - new Date(order.createdAt).getTime()) / 1000);
-      const shouldAutoComplete = elapsedSeconds >= estimateSeconds + 30;
+      const estimateMinutes = getKitchenEstimateMinutes(order, settings);
+      const estimateSeconds = estimateMinutes * 60;
+      const GRACE_SECONDS = 30;
+      const FORCE_CLEAR_SECONDS = 2 * 60 * 60;
+
+      const shouldAutoComplete =
+        elapsedSeconds >= estimateSeconds + GRACE_SECONDS || elapsedSeconds >= FORCE_CLEAR_SECONDS;
 
       if (!shouldAutoComplete) return order;
 
@@ -70,7 +63,7 @@ export async function GET() {
         const status = order.status;
         const isClosed = status ? CLOSED_STATUSES.has(status) : false;
         const isCompleted = Boolean(order.kitchenCompletedAt);
-        return order.kitchenStatus !== 'DONE' && !isClosed && !isCompleted;
+        return !isClosed && !isCompleted;
       })
       .sort(sortOrdersByTicketAndTime);
 
@@ -78,9 +71,10 @@ export async function GET() {
 
     return NextResponse.json({
       orders: openOrders.map((order) => {
+        const estimateMinutes = getKitchenEstimateMinutes(order, settings);
         const targetMs = order.targetReadyAt
           ? new Date(order.targetReadyAt).getTime()
-          : nowForResponse;
+          : new Date(order.createdAt).getTime() + estimateMinutes * 60_000;
 
         const diffSeconds = Math.round((targetMs - nowForResponse) / 1000);
         const secondsRemaining = Math.max(diffSeconds, 0);
@@ -92,7 +86,7 @@ export async function GET() {
           ticketNumber: order.ticketNumber ?? null,
           createdAt: order.createdAt,
           items: order.items,
-          estimatedPrepMinutes: order.estimatedPrepMinutes ?? null,
+          estimatedPrepMinutes: estimateMinutes,
           targetReadyAt: order.targetReadyAt ?? null,
           secondsRemaining,
           isOverdue,
