@@ -1,23 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { OrderItem } from '@/domain/models/order';
+import type { Order, OrderItem } from '@/domain/models/order';
 
-interface KitchenOrder {
-  id: string;
-  orderNumber: string;
-  ticketNumber: number | null;
-  createdAt: string;
-  items: OrderItem[];
-  estimatedPrepMinutes: number | null;
-  targetReadyAt: string | null;
-  secondsRemaining: number;
-  isOverdue: boolean;
-  note: string | null;
-}
+type KitchenOrder = Order & { kitchenEstimateMinutes?: number };
 
 interface KitchenApiResponse {
   orders: KitchenOrder[];
+}
+
+function getEstimateMinutes(order: KitchenOrder) {
+  return order.kitchenEstimateMinutes ?? order.estimatedPrepMinutes ?? 7;
 }
 
 function buildItemLabel(item: OrderItem) {
@@ -33,19 +26,13 @@ function formatTime(timestamp: string) {
 }
 
 function computeTime(order: KitchenOrder, nowMs: number) {
-  let diffSeconds: number;
+  const estimateMinutes = getEstimateMinutes(order);
 
-  if (order.targetReadyAt) {
-    diffSeconds = Math.round((new Date(order.targetReadyAt).getTime() - nowMs) / 1000);
-  } else if (order.estimatedPrepMinutes) {
-    const target = new Date(order.createdAt).getTime() + order.estimatedPrepMinutes * 60_000;
-    diffSeconds = Math.round((target - nowMs) / 1000);
-  } else {
-    const fallback = order.isOverdue ? -order.secondsRemaining : order.secondsRemaining;
-    diffSeconds = typeof fallback === 'number' ? fallback : 0;
-  }
+  const diffSeconds = order.targetReadyAt
+    ? Math.round((new Date(order.targetReadyAt).getTime() - nowMs) / 1000)
+    : Math.round((new Date(order.createdAt).getTime() + estimateMinutes * 60_000 - nowMs) / 1000);
 
-  const isOverdue = diffSeconds < 0 || order.isOverdue;
+  const isOverdue = diffSeconds < 0;
   const remainingSeconds = Math.max(diffSeconds, 0);
   const overdueSeconds = Math.max(-diffSeconds, 0);
 
@@ -127,22 +114,6 @@ export default function KitchenClient() {
     };
   }, [fetchOrders]);
 
-  const handleComplete = useCallback(
-    async (orderNumber: number | string) => {
-      try {
-        await fetch('/api/kitchen/complete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderNumber }),
-        });
-        await fetchOrders();
-      } catch (error) {
-        console.error('Failed to mark order as complete', error);
-      }
-    },
-    [fetchOrders],
-  );
-
   const sortedOrders = useMemo(
     () =>
       [...orders].sort((a, b) => {
@@ -192,10 +163,11 @@ export default function KitchenClient() {
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {sortedOrders.map((order) => {
             const countdown = formatCountdown(order, nowMs);
+            const estimateMinutes = getEstimateMinutes(order);
 
             return (
               <div
-                key={order.id}
+                key={order.orderNumber}
                 className="flex h-full flex-col rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 shadow-2xl"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -214,7 +186,7 @@ export default function KitchenClient() {
 
                 <div className="flex-1 space-y-2 text-xl font-semibold">
                   {order.items.map((item) => (
-                    <div key={`${order.id}-${item.productId}-${item.name}`}>{buildItemLabel(item)}</div>
+                    <div key={`${order.orderNumber}-${item.productId}-${item.name}`}>{buildItemLabel(item)}</div>
                   ))}
                   {order.note ? (
                     <div className="mt-3 rounded-xl border border-amber-300/40 bg-amber-500/10 px-4 py-3 text-base font-medium text-amber-100">
@@ -225,18 +197,8 @@ export default function KitchenClient() {
 
                 <div className="mt-6 flex items-center justify-between text-sm text-white/60">
                   <span>Placed at {formatTime(order.createdAt)}</span>
-                  {order.estimatedPrepMinutes ? (
-                    <span>Estimate: {order.estimatedPrepMinutes} min</span>
-                  ) : (
-                    <span>Live</span>
-                  )}
+                  <span>Estimate: {estimateMinutes} min</span>
                 </div>
-                <button
-                  className="mt-4 w-full rounded-xl bg-emerald-500/20 px-4 py-3 text-lg font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
-                  onClick={() => handleComplete(order.orderNumber)}
-                >
-                  Mark Complete
-                </button>
               </div>
             );
           })}
