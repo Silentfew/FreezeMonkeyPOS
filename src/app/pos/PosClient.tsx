@@ -122,18 +122,26 @@ function PaymentOverlay({
   }, [cashGiven, paymentType, totalCents]);
 
   const handleDigit = (digit: string) => {
-    setCashGiven((prev) => {
-      const next = prev || '';
-      if (digit === '.') {
-        if (next.includes('.')) return next;
-        if (next === '') return '0.';
+    const prev = cashGiven || '';
+    let next = prev;
+
+    if (digit === '.') {
+      if (next.includes('.')) {
+        setCashGiven(next);
+        return;
       }
-      return next + digit;
-    });
+      next = next === '' ? '0.' : `${next}.`;
+    } else {
+      next = prev === '0' ? digit : `${prev}${digit}`;
+    }
+
+    setCashGiven(next);
   };
 
   const handleBackspace = () => {
-    setCashGiven((prev) => prev.slice(0, -1));
+    const prev = cashGiven || '';
+    const next = prev.slice(0, -1);
+    setCashGiven(next);
   };
 
   const handleClear = () => setCashGiven('');
