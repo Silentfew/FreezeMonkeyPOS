@@ -66,14 +66,17 @@ export async function deleteCategory(
 }
 
 export async function updateCategory(
-  updated: Category
+  id: number | string,
+  updates: Partial<Omit<Category, "id">>
 ): Promise<Category[]> {
   const categories = await readCategories();
 
+  const targetId = Number(id);
+
   const newList = categories.map((c) =>
-    c.id === updated.id ? { ...c, ...updated } : c
+    Number(c.id) === targetId ? { ...c, ...updates } : c
   );
 
-  await saveCategories(newList);
+  await saveCategories(newList); // use the existing save function here
   return newList;
 }
