@@ -19,13 +19,10 @@ function sortOrdersByTicketAndTime(a: Order, b: Order) {
   return timeA - timeB;
 }
 
-const CLOSED_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'REFUNDED']);
-
 export async function GET() {
   try {
     const date = formatDate();
     const now = new Date();
-    const nowMs = now.getTime();
     const [orders, settings] = await Promise.all([getOrdersForDate(date), loadSettings()]);
 
     let hasChanges = false;
@@ -33,11 +30,10 @@ export async function GET() {
     const updatedOrders = orders.map((order) => {
       if (order.kitchenCompletedAt) return order;
 
-      const created = new Date(order.createdAt);
-      const elapsedSeconds = (nowMs - created.getTime()) / 1000;
-
       const estimateMinutes = getKitchenEstimateMinutes(order, settings);
       const estimateSeconds = estimateMinutes * 60;
+      const created = new Date(order.createdAt);
+      const elapsedSeconds = (now.getTime() - created.getTime()) / 1000;
       const GRACE_SECONDS = 30;
       const FORCE_CLEAR_SECONDS = 2 * 60 * 60;
 
@@ -49,7 +45,6 @@ export async function GET() {
       hasChanges = true;
       return {
         ...order,
-        kitchenStatus: 'DONE',
         kitchenCompletedAt: now.toISOString(),
       } satisfies Order;
     });
@@ -58,41 +53,13 @@ export async function GET() {
       await saveOrdersForDate(date, updatedOrders);
     }
 
-    const openOrders = updatedOrders
-      .filter((order) => {
-        const status = order.status;
-        const isClosed = status ? CLOSED_STATUSES.has(status) : false;
-        const isCompleted = Boolean(order.kitchenCompletedAt);
-        return !isClosed && !isCompleted;
-      })
-      .sort(sortOrdersByTicketAndTime);
-
-    const nowForResponse = Date.now();
+    const openOrders = updatedOrders.filter((order) => !order.kitchenCompletedAt).sort(sortOrdersByTicketAndTime);
 
     return NextResponse.json({
-      orders: openOrders.map((order) => {
-        const estimateMinutes = getKitchenEstimateMinutes(order, settings);
-        const targetMs = order.targetReadyAt
-          ? new Date(order.targetReadyAt).getTime()
-          : new Date(order.createdAt).getTime() + estimateMinutes * 60_000;
-
-        const diffSeconds = Math.round((targetMs - nowForResponse) / 1000);
-        const secondsRemaining = Math.max(diffSeconds, 0);
-        const isOverdue = diffSeconds < 0;
-
-        return {
-          id: order.orderNumber,
-          orderNumber: order.orderNumber,
-          ticketNumber: order.ticketNumber ?? null,
-          createdAt: order.createdAt,
-          items: order.items,
-          estimatedPrepMinutes: estimateMinutes,
-          targetReadyAt: order.targetReadyAt ?? null,
-          secondsRemaining,
-          isOverdue,
-          note: order.note ?? null,
-        };
-      }),
+      orders: openOrders.map((order) => ({
+        ...order,
+        kitchenEstimateMinutes: getKitchenEstimateMinutes(order, settings),
+      })),
     });
   } catch (error) {
     console.error('Failed to fetch kitchen orders', error);
