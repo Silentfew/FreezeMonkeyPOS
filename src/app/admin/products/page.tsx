@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Product } from '@/domain/models/product';
 import { AdminHeader } from '@/components/AdminHeader';
+import { NumericKeypad } from '@/components/NumericKeypad';
 
 function createEmptyProduct(): Product {
   return {
@@ -20,6 +21,11 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [activeKeypad, setActiveKeypad] = useState<{
+    productId: string;
+    field: 'price' | 'kitchenTime';
+  } | null>(null);
+  const [keypadValue, setKeypadValue] = useState('');
 
   const loadProducts = async (resetStatus = true) => {
     if (resetStatus) {
@@ -94,10 +100,36 @@ export default function AdminProductsPage() {
     }
   };
 
+  const openKeypad = (product: Product, field: 'price' | 'kitchenTime') => {
+    setActiveKeypad({ productId: product.id, field });
+    const currentValue = field === 'price' ? product.price : product.prepMinutes ?? 0;
+    setKeypadValue(Number.isFinite(currentValue) ? String(currentValue) : '');
+  };
+
+  const handleApplyKeypad = () => {
+    if (!activeKeypad) return;
+    const { productId, field } = activeKeypad;
+    const index = products.findIndex((product) => product.id === productId);
+    if (index === -1) {
+      setActiveKeypad(null);
+      return;
+    }
+
+    const parsed = Number(keypadValue);
+    if (field === 'price') {
+      updateProduct(index, 'price', Number.isFinite(parsed) ? parsed : 0);
+    } else {
+      updateProduct(index, 'prepMinutes', Math.max(0, Math.round(Number.isFinite(parsed) ? parsed : 0)));
+    }
+
+    setActiveKeypad(null);
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
-      <AdminHeader />
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
+    <>
+      <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+        <AdminHeader />
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
@@ -181,23 +213,22 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <input
-                          type="number"
+                          type="text"
+                          readOnly
                           value={product.price}
-                          min="0"
-                          step="0.01"
-                          onChange={(event) => updateProduct(index, 'price', Number(event.target.value) || 0)}
-                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
+                          onClick={() => openKeypad(product, 'price')}
+                          onFocus={() => openKeypad(product, 'price')}
+                          className="w-full cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                         />
                       </td>
                       <td className="px-4 py-3">
                         <input
-                          type="number"
-                          min="0"
+                          type="text"
+                          readOnly
                           value={product.prepMinutes ?? 0}
-                          onChange={(event) =>
-                            updateProduct(index, 'prepMinutes', Number(event.target.value) || 0)
-                          }
-                          className="w-24 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
+                          onClick={() => openKeypad(product, 'kitchenTime')}
+                          onFocus={() => openKeypad(product, 'kitchenTime')}
+                          className="w-24 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                         />
                       </td>
                       <td className="px-4 py-3">
@@ -218,7 +249,20 @@ export default function AdminProductsPage() {
             </table>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+
+      {activeKeypad ? (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4">
+          <NumericKeypad
+            label={activeKeypad.field === 'price' ? 'Edit price' : 'Kitchen time (min)'}
+            value={keypadValue}
+            onChange={setKeypadValue}
+            decimals={activeKeypad.field === 'price'}
+            onDone={handleApplyKeypad}
+          />
+        </div>
+      ) : null}
+    </>
   );
 }

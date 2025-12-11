@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import { DailyCloseoutSummary } from '@/domain/reports/dailyCloseout';
+import { NumericKeypad } from '@/components/NumericKeypad';
 
 function formatDateInput(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -25,6 +26,7 @@ export default function DailyCloseoutReportPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [countedCash, setCountedCash] = useState('');
   const [notes, setNotes] = useState('');
+  const [showKeypad, setShowKeypad] = useState(false);
 
   const loadReport = async () => {
     setLoading(true);
@@ -116,14 +118,26 @@ export default function DailyCloseoutReportPage() {
   };
 
   const expectedCash = report?.summary.payments.cashCents ?? 0;
-  const hasCountedCash = typeof report?.summary.countedCashCents === 'number';
-  const difference = hasCountedCash ? report?.summary.cashDifferenceCents ?? 0 : 0;
+  const parsedCountedCash = Number(countedCash);
+  const localCountedCashCents =
+    countedCash.trim().length > 0 && Number.isFinite(parsedCountedCash)
+      ? Math.round(parsedCountedCash * 100)
+      : undefined;
+  const countedCashCents =
+    typeof localCountedCashCents === 'number'
+      ? localCountedCashCents
+      : typeof report?.summary.countedCashCents === 'number'
+        ? report.summary.countedCashCents
+        : undefined;
+  const hasCountedCash = typeof countedCashCents === 'number';
+  const difference = hasCountedCash ? countedCashCents - expectedCash : 0;
   const differencePositive = difference > 0;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
-      <AdminHeader />
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+    <>
+      <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+        <AdminHeader />
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin · Reports</p>
@@ -223,15 +237,16 @@ export default function DailyCloseoutReportPage() {
               </div>
 
               <div className="rounded-2xl bg-black/30 p-4 ring-1 ring-white/10">
-                <label className="flex flex-col gap-2 text-sm text-white/80">
+                <label
+                  className="flex flex-col gap-2 text-sm text-white/80"
+                  onClick={() => setShowKeypad(true)}
+                >
                   <span className="text-xs uppercase tracking-[0.2em] text-white/60">Counted cash (till)</span>
                   <input
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
+                    type="text"
+                    readOnly
                     value={countedCash}
-                    onChange={(event) => setCountedCash(event.target.value)}
-                    className="rounded-xl border border-white/10 bg-[#0B1222] px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
+                    className="cursor-pointer rounded-xl border border-white/10 bg-[#0B1222] px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                     placeholder="0.00"
                   />
                 </label>
@@ -265,7 +280,7 @@ export default function DailyCloseoutReportPage() {
                 <div className="flex items-center justify-between text-base">
                   <span className="text-white/70">Counted cash</span>
                   <span className="font-black text-white">
-                    {hasCountedCash ? `$${formatDollars(report.summary.countedCashCents)}` : 'Not recorded'}
+                    {hasCountedCash ? `$${formatDollars(countedCashCents)}` : 'Not recorded'}
                   </span>
                 </div>
                 <div
@@ -292,7 +307,20 @@ export default function DailyCloseoutReportPage() {
             Load a date to view its closeout summary.
           </div>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+
+      {showKeypad && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4">
+          <NumericKeypad
+            label="Counted cash"
+            value={countedCash}
+            decimals
+            onChange={setCountedCash}
+            onDone={() => setShowKeypad(false)}
+          />
+        </div>
+      )}
+    </>
   );
 }

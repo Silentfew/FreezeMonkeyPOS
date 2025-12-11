@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AdminHeader } from '@/components/AdminHeader';
 import type { KitchenSettings, Settings } from '@/domain/models/settings';
+import { NumericKeypad } from '@/components/NumericKeypad';
 
 const CATEGORY_LABELS: Record<number, string> = {
   1: 'Burgers',
@@ -29,6 +30,13 @@ export default function KitchenSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [activeKeypad, setActiveKeypad] = useState<
+    | { type: 'global' }
+    | { type: 'default' }
+    | { type: 'category'; categoryId: number }
+    | null
+  >(null);
+  const [keypadValue, setKeypadValue] = useState('');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -75,6 +83,39 @@ export default function KitchenSettingsPage() {
     });
   };
 
+  const openKeypad = (
+    config: { type: 'global' } | { type: 'default' } | { type: 'category'; categoryId: number },
+  ) => {
+    setActiveKeypad(config);
+    if (config.type === 'global') {
+      setKeypadValue(String(prepMinutes ?? 0));
+    } else if (config.type === 'default') {
+      setKeypadValue(String(kitchen.defaultMinutes ?? 0));
+    } else {
+      const minutes = kitchenMap.get(config.categoryId) ?? kitchen.defaultMinutes ?? 0;
+      setKeypadValue(String(minutes));
+    }
+  };
+
+  const handleApplyKeypad = () => {
+    if (!activeKeypad) return;
+    const parsed = Number(keypadValue);
+
+    if (activeKeypad.type === 'global') {
+      setPrepMinutes(Math.max(1, Math.min(60, Math.round(Number.isFinite(parsed) ? parsed : 0))));
+    } else if (activeKeypad.type === 'default') {
+      setKitchen((current) => ({
+        ...current,
+        defaultMinutes: Math.max(0, Math.round(Number.isFinite(parsed) ? parsed : 0)),
+      }));
+    } else {
+      const safeValue = Math.max(0, Math.round(Number.isFinite(parsed) ? parsed : 0));
+      updateCategoryMinutes(activeKeypad.categoryId, safeValue);
+    }
+
+    setActiveKeypad(null);
+  };
+
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
@@ -113,9 +154,10 @@ export default function KitchenSettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
-      <AdminHeader />
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
+    <>
+      <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
+        <AdminHeader />
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
@@ -155,12 +197,12 @@ export default function KitchenSettingsPage() {
             </div>
             <div className="flex items-center gap-3">
               <input
-                type="number"
-                min={1}
-                max={60}
+                type="text"
+                readOnly
                 value={prepMinutes}
-                onChange={(event) => setPrepMinutes(Math.max(1, Math.min(60, Number(event.target.value) || 1)))}
-                className="w-32 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
+                onClick={() => openKeypad({ type: 'global' })}
+                onFocus={() => openKeypad({ type: 'global' })}
+                className="w-32 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
               />
               <span className="text-sm text-white/60">minutes</span>
             </div>
@@ -178,16 +220,12 @@ export default function KitchenSettingsPage() {
                   <td className="px-4 py-4 text-base font-semibold text-white/80">Default (fallback)</td>
                   <td className="px-4 py-4">
                     <input
-                      type="number"
-                      min={0}
+                      type="text"
+                      readOnly
                       value={kitchen.defaultMinutes ?? 0}
-                      onChange={(event) =>
-                        setKitchen((current) => ({
-                          ...current,
-                          defaultMinutes: Math.max(0, Number(event.target.value) || 0),
-                        }))
-                      }
-                      className="w-32 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
+                      onClick={() => openKeypad({ type: 'default' })}
+                      onFocus={() => openKeypad({ type: 'default' })}
+                      className="w-32 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
                     />
                   </td>
                 </tr>
@@ -199,13 +237,12 @@ export default function KitchenSettingsPage() {
                       <td className="px-4 py-4 text-base font-semibold text-white/80">{label}</td>
                       <td className="px-4 py-4">
                         <input
-                          type="number"
-                          min={0}
+                          type="text"
+                          readOnly
                           value={minutes}
-                          onChange={(event) =>
-                            updateCategoryMinutes(categoryId, Number(event.target.value) || 0)
-                          }
-                          className="w-32 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
+                          onClick={() => openKeypad({ type: 'category', categoryId })}
+                          onFocus={() => openKeypad({ type: 'category', categoryId })}
+                          className="w-32 cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
                         />
                       </td>
                     </tr>
@@ -222,7 +259,25 @@ export default function KitchenSettingsPage() {
             </table>
           </div>
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
+
+      {activeKeypad ? (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-4">
+          <NumericKeypad
+            label={
+              activeKeypad.type === 'global'
+                ? 'Global prep time'
+                : activeKeypad.type === 'default'
+                  ? 'Default prep time'
+                  : `${CATEGORY_LABELS[activeKeypad.categoryId] ?? 'Category'} prep time`
+            }
+            value={keypadValue}
+            onChange={setKeypadValue}
+            onDone={handleApplyKeypad}
+          />
+        </div>
+      ) : null}
+    </>
   );
 }
