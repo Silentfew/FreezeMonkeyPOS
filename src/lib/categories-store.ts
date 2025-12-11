@@ -25,3 +25,24 @@ export async function fetchCategories(): Promise<Category[]> {
     : [];
   return categories;
 }
+
+export async function saveCategories(categories: Category[]): Promise<void> {
+  const { writeJSON } = await import('@/infra/fs/jsonStore');
+  await writeJSON(CATEGORIES_FILE, categories);
+}
+
+export async function addCategory(newCategory: Category): Promise<Category[]> {
+  const categories = await readCategories();
+  const updated = [...categories, newCategory];
+  await saveCategories(updated);
+  return updated;
+}
+
+export async function deleteCategory(
+  id: string | number
+): Promise<Category[]> {
+  const categories = await readCategories();
+  const updated = categories.filter((c) => c.id !== id);
+  await saveCategories(updated);
+  return updated;
+}
