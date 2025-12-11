@@ -4,14 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { SessionUser } from '@/lib/session';
+import type { Category } from '@/lib/categories-store';
 
 import type { Product as DomainProduct } from '@/domain/models/product';
-
-type Category = {
-  id: string;
-  name: string;
-  order?: number;
-};
 
 type Product = DomainProduct & {
   hasModifiers?: boolean;
@@ -310,9 +305,9 @@ export default function PosClient({ categories: initialCategories, products: ini
   );
 
   const [categories] = useState<Category[]>(() => initialCategories);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    () => initialCategories[0]?.id ?? null,
-  );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    Category['id'] | null
+  >(() => initialCategories[0]?.id ?? null);
   const allProducts = normalizedProducts;
   const [products, setProducts] = useState<PosProduct[]>(() => normalizedProducts);
   const loadingProducts = false;
@@ -337,7 +332,9 @@ export default function PosClient({ categories: initialCategories, products: ini
       return;
     }
 
-    const filtered = allProducts.filter((product) => product.categoryId === selectedCategoryId);
+    const filtered = allProducts.filter(
+      (product) => String(product.categoryId) === String(selectedCategoryId),
+    );
     setProducts(filtered);
   }, [allProducts, selectedCategoryId]);
 
@@ -675,7 +672,7 @@ export default function PosClient({ categories: initialCategories, products: ini
           <section className="rounded-2xl bg-white/5 p-4 shadow-lg ring-1 ring-white/10">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {categories.map((category) => {
-                const detail = CATEGORY_DETAILS[category.id];
+                const detail = CATEGORY_DETAILS[String(category.id)];
                 const active = selectedCategoryId === category.id;
                 return (
                   <button
@@ -702,7 +699,11 @@ export default function PosClient({ categories: initialCategories, products: ini
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Menu</p>
                 <h2 className="text-xl font-black text-[#E9F9FF]">
-                  {CATEGORY_DETAILS[selectedCategoryId ?? '']?.title ?? 'Pick a category'}
+                  {
+                    CATEGORY_DETAILS[
+                      selectedCategoryId != null ? String(selectedCategoryId) : ''
+                    ]?.title ?? 'Pick a category'
+                  }
                 </h2>
               </div>
               {loadingProducts && <span className="text-sm text-[#E9F9FF]/70">Loading...</span>}
@@ -719,7 +720,7 @@ export default function PosClient({ categories: initialCategories, products: ini
                     className="flex flex-1 flex-col justify-between text-left"
                   >
                     <div className="text-sm uppercase tracking-[0.25em] text-[#E9F9FF]/50">
-                      {CATEGORY_DETAILS[product.categoryId]?.title}
+                      {CATEGORY_DETAILS[String(product.categoryId)]?.title}
                     </div>
                     <div className="mt-2 text-lg font-black text-[#E9F9FF]">{product.name}</div>
                   <div className="mt-3 text-xl font-black text-[#FFE561]">
