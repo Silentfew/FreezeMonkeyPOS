@@ -1,5 +1,5 @@
 export interface Category {
-  id: string;
+  id: number;
   name: string;
   order: number;
 }
@@ -31,11 +31,29 @@ export async function saveCategories(categories: Category[]): Promise<void> {
   await writeJSON(CATEGORIES_FILE, categories);
 }
 
-export async function addCategory(newCategory: Category): Promise<Category[]> {
+export async function addCategory(
+  payload: Omit<Category, "id">
+): Promise<Category> {
   const categories = await readCategories();
+
+  const nextId =
+    categories.length > 0
+      ? Math.max(
+          ...categories
+            .map((c) => Number(c.id))
+            .filter((n) => !Number.isNaN(n))
+        ) + 1
+      : 1;
+
+  const newCategory: Category = {
+    ...payload,
+    id: nextId,
+  };
+
   const updated = [...categories, newCategory];
-  await saveCategories(updated);
-  return updated;
+
+  await saveCategories(updated); // use the existing save function here
+  return newCategory;
 }
 
 export async function deleteCategory(
