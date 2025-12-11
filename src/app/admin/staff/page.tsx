@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PinUser } from '@/domain/models/settings';
 import { AdminHeader } from '@/components/AdminHeader';
+import TouchKeyboard from '@/ui/TouchKeyboard';
 
 type PinUserWithKey = PinUser & { _key: string };
 
@@ -23,6 +24,7 @@ export default function StaffAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [activeNameIndex, setActiveNameIndex] = useState<number | null>(null);
 
   const loadPins = async (resetStatus = true) => {
     if (resetStatus) {
@@ -66,6 +68,39 @@ export default function StaffAdminPage() {
 
   const removePin = (index: number) => {
     setPins((current) => current.filter((_, i) => i !== index));
+  };
+
+  const handleKeyboardKey = (key: string) => {
+    if (activeNameIndex === null) return;
+
+    setPins((prev) => {
+      const next = [...prev];
+      const current = next[activeNameIndex];
+      if (!current) return prev;
+
+      let name = current.name ?? '';
+
+      switch (key) {
+        case 'space':
+          name = `${name} `;
+          break;
+        case 'backspace':
+          name = name.slice(0, -1);
+          break;
+        case 'clear':
+          name = '';
+          break;
+        case 'done':
+          setActiveNameIndex(null);
+          return next;
+        default:
+          name = `${name}${key.toUpperCase()}`;
+          break;
+      }
+
+      next[activeNameIndex] = { ...current, name };
+      return next;
+    });
   };
 
   const savePins = async () => {
@@ -193,12 +228,21 @@ export default function StaffAdminPage() {
                   pins.map((pin, index) => (
                     <tr key={pin._key || pin.pin || index} className="hover:bg-white/5">
                       <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={pin.name}
-                          onChange={(event) => updatePin(index, 'name', event.target.value)}
-                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={pin.name}
+                            onChange={(event) => updatePin(index, 'name', event.target.value)}
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setActiveNameIndex(index)}
+                            className="whitespace-nowrap rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                          >
+                            Touch edit
+                          </button>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <input
@@ -236,6 +280,18 @@ export default function StaffAdminPage() {
             </table>
           </div>
         </div>
+
+        {activeNameIndex !== null && pins[activeNameIndex] && (
+          <div className="mt-4 rounded-2xl bg-white/5 p-4 shadow-lg ring-1 ring-white/10">
+            <p className="text-sm text-white/70">
+              Editing name for:{' '}
+              <span className="font-semibold text-white">
+                {pins[activeNameIndex].name || 'New staff'}
+              </span>
+            </p>
+            <TouchKeyboard onKeyPress={handleKeyboardKey} disabled={saving} />
+          </div>
+        )}
       </div>
     </main>
   );
