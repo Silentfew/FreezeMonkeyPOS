@@ -63,7 +63,7 @@ export async function addModifier(
 
   const newModifier: Modifier = {
     ...payload,
-    id: nextId,
+    id: String(nextId),
   };
 
   const updated = [...modifiers, newModifier];
