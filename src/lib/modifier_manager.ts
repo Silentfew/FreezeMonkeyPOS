@@ -73,12 +73,16 @@ export async function addModifier(
 }
 
 export async function updateModifier(
-  updated: Modifier
+  id: number | string,
+  updates: Partial<Omit<Modifier, "id">>
 ): Promise<Modifier[]> {
   const modifiers = await readModifiers();
+  const targetId = Number(id);
+
   const newList = modifiers.map((m) =>
-    m.id === updated.id ? { ...m, ...updated } : m
+    Number(m.id) === targetId ? { ...m, ...updates } : m
   );
+
   await saveModifiers(newList);
   return newList;
 }
