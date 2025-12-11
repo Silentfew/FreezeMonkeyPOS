@@ -61,11 +61,11 @@ export function Combobox({ items, placeholder, onSelect, noSelect, className }: 
                 <CommandItem
                   key={item.id}
                   value={item.id.toString()}
-                  onSelect={(currentValue) => {
+                  onSelect={(currentValue: string) => {
                     if (typeof item.id === "string") {
                       onSelect(currentValue);
                     } else {
-                      onSelect(Number(currentValue));
+                      onSelect(item.id);
                     }
                     setOpen(false);
                     if (noSelect) return;
