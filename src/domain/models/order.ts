@@ -14,6 +14,7 @@ export interface OrderItem {
   name: string;
   basePrice: number;
   quantity: number;
+  categoryId?: string | number;
   modifiers: Modifier[];
   lineTotal: number;
 }

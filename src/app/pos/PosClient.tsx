@@ -46,6 +46,7 @@ type CartItem = {
   name: string;
   quantity: number;
   unitPriceCents: number;
+  categoryId?: string;
 };
 
 type PaymentType = 'CASH' | 'CARD' | 'OTHER';
@@ -63,6 +64,7 @@ type DraftOrderItem = {
   basePrice: number;
   quantity: number;
   modifiers: [];
+  categoryId?: string | number;
 };
 
 type DraftOrderPayload = {
@@ -427,6 +429,7 @@ export default function PosClient({
           name: product.name,
           quantity: 1,
           unitPriceCents,
+          categoryId: typeof product.categoryId === 'number' ? String(product.categoryId) : product.categoryId,
         },
       ];
     });
@@ -516,6 +519,7 @@ export default function PosClient({
           basePrice: item.unitPriceCents / 100,
           quantity: item.quantity,
           modifiers: [],
+          categoryId: item.categoryId,
         })),
         cashierName: 'Unknown',
         taxFree: false,

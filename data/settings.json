@@ -2,5 +2,14 @@
   "currency": "USD",
   "taxRate": 0.15,
   "taxInclusive": false,
-  "pins": []
+  "pins": [],
+  "kitchen": {
+    "defaultMinutes": 7,
+    "categories": [
+      { "categoryId": 1, "minutes": 10 },
+      { "categoryId": 2, "minutes": 8 },
+      { "categoryId": 3, "minutes": 7 },
+      { "categoryId": 4, "minutes": 5 }
+    ]
+  }
 }

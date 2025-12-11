@@ -4,6 +4,7 @@ export interface SaleProduct {
   id: string;
   name: string;
   price: number;
+  categoryId?: string | number;
 }
 
 export interface OrderItem {
@@ -12,6 +13,7 @@ export interface OrderItem {
   name: string;
   basePrice: number;
   quantity: number;
+  categoryId?: string | number;
   modifiers: Modifier[];
 }
 
@@ -36,6 +38,7 @@ export function createOrderItem(
     name: product.name,
     basePrice: product.price,
     quantity,
+    categoryId: product.categoryId,
     modifiers,
   };
 }
