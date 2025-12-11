@@ -46,3 +46,16 @@ export async function deleteCategory(
   await saveCategories(updated);
   return updated;
 }
+
+export async function updateCategory(
+  updated: Category
+): Promise<Category[]> {
+  const categories = await readCategories();
+
+  const newList = categories.map((c) =>
+    c.id === updated.id ? { ...c, ...updated } : c
+  );
+
+  await saveCategories(newList);
+  return newList;
+}
