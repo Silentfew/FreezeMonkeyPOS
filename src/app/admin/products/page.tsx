@@ -1,31 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Product } from '@/domain/models/product';
 import { AdminHeader } from '@/components/AdminHeader';
 import { NumericKeypad } from '@/components/NumericKeypad';
-
-function createEmptyProduct(): Product {
-  return {
-    id: `prod-${Date.now()}`,
-    name: '',
-    price: 0,
-    categoryId: '',
-    active: true,
-    prepMinutes: 1,
-  };
-}
+import { TouchKeyboard } from '@/components/TouchKeyboard';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [defaultPrepMinutes, setDefaultPrepMinutes] = useState(7);
   const [activeKeypad, setActiveKeypad] = useState<{
     productId: string;
     field: 'price' | 'kitchenTime';
   } | null>(null);
   const [keypadValue, setKeypadValue] = useState('');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
   const loadProducts = async (resetStatus = true) => {
     if (resetStatus) {
@@ -33,25 +27,53 @@ export default function AdminProductsPage() {
     }
     setLoading(true);
     try {
-      const response = await fetch('/api/products?includeInactive=true', {
-        cache: 'no-store',
-      });
-      if (!response.ok) {
+      const [productsResponse, settingsResponse] = await Promise.all([
+        fetch('/api/products?includeInactive=true', {
+          cache: 'no-store',
+        }),
+        fetch('/api/settings', { cache: 'no-store' }).catch(() => null),
+      ]);
+
+      if (!productsResponse.ok) {
         throw new Error('Failed to load products');
       }
-      const data = await response.json();
+
+      const data = await productsResponse.json();
       setProducts(Array.isArray(data?.products) ? data.products : []);
+
+      if (settingsResponse?.ok) {
+        const settingsData = await settingsResponse.json();
+        const prepMinutes = settingsData?.settings?.kitchenPrepMinutes;
+        if (typeof prepMinutes === 'number' && Number.isFinite(prepMinutes)) {
+          setDefaultPrepMinutes(Math.max(1, Math.round(prepMinutes)));
+        }
+      } else {
+        setDefaultPrepMinutes(7);
+      }
     } catch (error) {
       console.error(error);
       setStatus({ type: 'error', message: 'Unable to load products' });
     } finally {
       setLoading(false);
+      setEditingIndex(null);
+      setEditingName('');
     }
   };
 
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (editingIndex === null) return;
+    const currentProduct = products[editingIndex];
+    if (!currentProduct) {
+      setEditingIndex(null);
+      setEditingName('');
+      return;
+    }
+    setEditingName(currentProduct.name ?? '');
+  }, [editingIndex, products]);
 
   const updateProduct = (
     index: number,
@@ -63,8 +85,57 @@ export default function AdminProductsPage() {
     );
   };
 
+  const handleNameChange = (index: number, value: string) => {
+    updateProduct(index, 'name', value);
+    if (editingIndex === index) {
+      setEditingName(value);
+    }
+  };
+
+  const startEditingName = (index: number) => {
+    const product = products[index];
+    if (!product) return;
+
+    setEditingIndex(index);
+    setEditingName(product.name ?? '');
+  };
+
+  const getNextProductId = (current: Product[]) => {
+    const maxNumericId = current.reduce((max, product) => {
+      const match = String(product.id ?? '').match(/(\d+)/);
+      if (!match) return max;
+      const value = parseInt(match[1], 10);
+      return Number.isFinite(value) ? Math.max(max, value) : max;
+    }, 0);
+
+    const nextValue = maxNumericId > 0 ? maxNumericId + 1 : current.length + 1;
+    return `p-${nextValue}`;
+  };
+
   const addProduct = () => {
-    setProducts((current) => [...current, createEmptyProduct()]);
+    setProducts((current) => {
+      const nextId = getNextProductId(current);
+      const newProduct: Product = {
+        id: nextId,
+        name: 'New product',
+        price: 0,
+        categoryId: '1',
+        active: true,
+        prepMinutes: defaultPrepMinutes ?? 7,
+      };
+
+      const updated = [...current, newProduct];
+      const newIndex = updated.length - 1;
+      setEditingIndex(newIndex);
+      setEditingName(newProduct.name);
+
+      setTimeout(() => {
+        const target = rowRefs.current[newProduct.id];
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+
+      return updated;
+    });
   };
 
   const toggleActive = (index: number) => {
@@ -75,6 +146,17 @@ export default function AdminProductsPage() {
         return { ...product, active: !isActive };
       }),
     );
+  };
+
+  const removeProduct = (index: number) => {
+    setProducts((current) => current.filter((_, i) => i !== index));
+    if (editingIndex === null) return;
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setEditingName('');
+    } else if (editingIndex > index) {
+      setEditingIndex(editingIndex - 1);
+    }
   };
 
   const saveProducts = async () => {
@@ -125,35 +207,44 @@ export default function AdminProductsPage() {
     setActiveKeypad(null);
   };
 
+  const handleKeyboardChange = (value: string) => {
+    if (editingIndex === null) return;
+    handleNameChange(editingIndex, value);
+  };
+
+  const handleKeyboardDone = () => {
+    setEditingIndex(null);
+  };
+
   return (
     <>
       <main className="min-h-screen bg-gradient-to-br from-[#0B1222] via-[#0e1528] to-[#1E1E1E] text-white">
         <AdminHeader />
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
-            <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Products</h1>
-            <p className="text-sm text-white/70">Add, edit, or deactivate products for the POS.</p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin</p>
+              <h1 className="text-3xl font-black text-[#E9F9FF]">Manage Products</h1>
+              <p className="text-sm text-white/70">Add, edit, or deactivate products for the POS.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={addProduct}
+                className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
+              >
+                + Add product
+              </button>
+              <button
+                type="button"
+                onClick={saveProducts}
+                disabled={saving}
+                className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={addProduct}
-              className="rounded-xl bg-[#00C2FF] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#4dd9ff]"
-            >
-              + Add product
-            </button>
-            <button
-              type="button"
-              onClick={saveProducts}
-              disabled={saving}
-              className="rounded-xl bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg hover:bg-[#ffeb85] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
-          </div>
-        </div>
 
         {status && (
           <div
@@ -177,29 +268,38 @@ export default function AdminProductsPage() {
                   <th className="px-4 py-3">Price</th>
                   <th className="px-4 py-3">Kitchen Time (min)</th>
                   <th className="px-4 py-3">Active</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-white/70">
+                    <td colSpan={6} className="px-4 py-6 text-center text-white/70">
                       Loading products...
                     </td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-white/70">
+                    <td colSpan={6} className="px-4 py-6 text-center text-white/70">
                       No products found. Add a new product to get started.
                     </td>
                   </tr>
                 ) : (
                   products.map((product, index) => (
-                    <tr key={product.id} className="hover:bg-white/5">
+                    <tr
+                      key={product.id}
+                      ref={(element) => {
+                        rowRefs.current[product.id] = element;
+                      }}
+                      className="hover:bg-white/5"
+                    >
                       <td className="px-4 py-3">
                         <input
                           type="text"
-                          value={product.name}
-                          onChange={(event) => updateProduct(index, 'name', event.target.value)}
+                          value={editingIndex === index ? editingName : product.name}
+                          onClick={() => startEditingName(index)}
+                          onFocus={() => startEditingName(index)}
+                          onChange={(event) => handleNameChange(index, event.target.value)}
                           className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-[#00C2FF]/60"
                         />
                       </td>
@@ -242,6 +342,15 @@ export default function AdminProductsPage() {
                           <span>{product.active === false ? 'Inactive' : 'Active'}</span>
                         </label>
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(index)}
+                          className="rounded-lg border border-red-400/40 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -249,6 +358,22 @@ export default function AdminProductsPage() {
             </table>
           </div>
         </div>
+
+        {editingIndex !== null && products[editingIndex] && (
+          <div className="mt-4 rounded-2xl bg-white/5 p-4 shadow-lg ring-1 ring-white/10">
+            <p className="text-sm text-white/70">
+              Editing name for:{' '}
+              <span className="font-semibold text-white">
+                {products[editingIndex].name || 'New product'}
+              </span>
+            </p>
+            <TouchKeyboard
+              value={editingName}
+              onChange={handleKeyboardChange}
+              onDone={handleKeyboardDone}
+            />
+          </div>
+        )}
         </div>
       </main>
 

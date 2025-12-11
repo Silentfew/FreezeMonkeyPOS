@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PinUser } from '@/domain/models/settings';
 import { AdminHeader } from '@/components/AdminHeader';
-import TouchKeyboard from '@/ui/TouchKeyboard';
+import { TouchKeyboard } from '@/components/TouchKeyboard';
 
 type PinUserWithKey = PinUser & { _key: string };
 
@@ -68,39 +68,6 @@ export default function StaffAdminPage() {
 
   const removePin = (index: number) => {
     setPins((current) => current.filter((_, i) => i !== index));
-  };
-
-  const handleKeyboardKey = (key: string) => {
-    if (activeNameIndex === null) return;
-
-    setPins((prev) => {
-      const next = [...prev];
-      const current = next[activeNameIndex];
-      if (!current) return prev;
-
-      let name = current.name ?? '';
-
-      switch (key) {
-        case 'space':
-          name = `${name} `;
-          break;
-        case 'backspace':
-          name = name.slice(0, -1);
-          break;
-        case 'clear':
-          name = '';
-          break;
-        case 'done':
-          setActiveNameIndex(null);
-          return next;
-        default:
-          name = `${name}${key.toUpperCase()}`;
-          break;
-      }
-
-      next[activeNameIndex] = { ...current, name };
-      return next;
-    });
   };
 
   const savePins = async () => {
@@ -289,7 +256,11 @@ export default function StaffAdminPage() {
                 {pins[activeNameIndex].name || 'New staff'}
               </span>
             </p>
-            <TouchKeyboard onKeyPress={handleKeyboardKey} disabled={saving} />
+            <TouchKeyboard
+              value={pins[activeNameIndex]?.name ?? ''}
+              onChange={(value) => updatePin(activeNameIndex, 'name', value)}
+              onDone={() => setActiveNameIndex(null)}
+            />
           </div>
         )}
       </div>
