@@ -478,6 +478,10 @@ export default function PosClient({ categories: initialCategories, products: ini
     window.open(url, 'kitchen-screen', 'noopener,noreferrer,width=1024,height=768');
   };
 
+  const handleOpenCloseDay = () => {
+    window.open('/admin/reports/daily-closeout', '_blank', 'noopener,noreferrer');
+  };
+
   const handleCompleteSale = async () => {
     if (!cart.length || isSubmitting) {
       setStatusMessage('No energies queued. Add a relic or ration before deploying.');
@@ -623,6 +627,13 @@ export default function PosClient({ categories: initialCategories, products: ini
                   Rift Control
                 </button>
               )}
+              <button
+                type="button"
+                onClick={handleOpenCloseDay}
+                className="rounded-full bg-[#FFE561] px-4 py-2 text-sm font-semibold text-[#0b1222] shadow-lg ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-[#ffeb85] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFE561]"
+              >
+                Close Day
+              </button>
               <button
                 type="button"
                 onClick={handleOpenKitchen}
