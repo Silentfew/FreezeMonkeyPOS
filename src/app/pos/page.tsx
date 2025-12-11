@@ -7,11 +7,11 @@ import type { Modifier } from '@/lib/modifier_manager';
 import { readModifiers } from '@/lib/modifier_manager';
 import { getSessionUser } from '@/lib/session';
 export default async function PosPage() {
-  const [categories, products, modifiers] = await Promise.all<[
-    Category[],
-    Product[],
-    Modifier[],
-  ]>([readCategories(), readProducts(), readModifiers()]);
+  const [categories, products, modifiers] = (await Promise.all([
+    readCategories(),
+    readProducts(),
+    readModifiers(),
+  ])) as [Category[], Product[], Modifier[]];
 
   const productsWithBasePrice = products.map((product) => ({
     ...product,
