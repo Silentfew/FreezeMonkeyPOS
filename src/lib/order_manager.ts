@@ -23,6 +23,12 @@ export interface Totals {
   total: number;
 }
 
+export interface TaxConfig {
+  pricesIncludeTax: boolean;
+  gstRatePercent?: number;
+  taxFree?: boolean;
+}
+
 export function createOrderItem(
   product: SaleProduct,
   modifiers: Modifier[] = [],
@@ -81,18 +87,15 @@ export function calculateItemTotal(item: OrderItem): number {
   return unitPrice * item.quantity;
 }
 
-export function calculateTotals(
-  items: OrderItem[],
-  taxFree: boolean,
-  taxRatePercent = 15,
-  pricesIncludeTax = false,
-): Totals {
+export function calculateTotals(items: OrderItem[], config: TaxConfig): Totals {
   const lineTotalsCents = items.reduce(
     (sum, item) => sum + Math.round(calculateItemTotal(item) * 100),
     0,
   );
 
-  if (taxFree || !taxRatePercent || taxRatePercent <= 0) {
+  const ratePercent = config.gstRatePercent ?? 15;
+
+  if (config.taxFree || !ratePercent || ratePercent <= 0) {
     return {
       subtotal: lineTotalsCents / 100,
       tax: 0,
@@ -100,9 +103,9 @@ export function calculateTotals(
     };
   }
 
-  const rate = taxRatePercent / 100;
+  const rate = ratePercent / 100;
 
-  if (pricesIncludeTax) {
+  if (config.pricesIncludeTax) {
     const totalCents = lineTotalsCents;
     const subtotalCents = Math.round(totalCents / (1 + rate));
     const taxCents = totalCents - subtotalCents;

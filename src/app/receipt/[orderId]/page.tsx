@@ -1,5 +1,6 @@
 import ReceiptClient from './ReceiptClient';
 import { getOrderByOrderNumber } from '@/infra/fs/ordersRepo';
+import { loadSettings } from '@/infra/fs/settingsRepo';
 
 interface ReceiptPageProps {
   params: { orderId: string };
@@ -9,6 +10,7 @@ interface ReceiptPageProps {
 export default async function ReceiptPage({ params, searchParams }: ReceiptPageProps) {
   const orderId = decodeURIComponent(params.orderId);
   const order = await getOrderByOrderNumber(orderId);
+  const settings = await loadSettings();
   const autoPrint = typeof searchParams?.auto === 'string' ? searchParams.auto === '1' : false;
 
   if (!order) {
@@ -27,7 +29,14 @@ export default async function ReceiptPage({ params, searchParams }: ReceiptPageP
         <title>Receipt {orderId}</title>
       </head>
       <body>
-        <ReceiptClient order={order} autoPrint={autoPrint} />
+        <ReceiptClient
+          order={order}
+          autoPrint={autoPrint}
+          pricing={{
+            pricesIncludeTax: settings.pricesIncludeTax ?? false,
+            gstRatePercent: settings.gstRatePercent ?? settings.taxRatePercent ?? 15,
+          }}
+        />
       </body>
     </html>
   );

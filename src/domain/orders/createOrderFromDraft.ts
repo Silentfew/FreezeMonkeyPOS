@@ -47,15 +47,6 @@ function toPercent(taxRate?: number): number | undefined {
   return taxRate > 1 ? taxRate : taxRate * 100;
 }
 
-function buildTotals(
-  items: DraftOrderItem[],
-  taxFree: boolean,
-  taxRatePercent: number,
-  pricesIncludeTax: boolean,
-): OrderTotals {
-  return calculateTotals(items, taxFree, taxRatePercent, pricesIncludeTax);
-}
-
 export async function createOrderFromDraft(
   draft: OrderDraft,
   context: BuildContext,
@@ -64,9 +55,13 @@ export async function createOrderFromDraft(
   const createdAt = context.createdAt ?? new Date().toISOString();
   const items = buildItems(draft.items);
   const settings = await loadSettings();
-  const taxRatePercent = toPercent(draft.taxRate) ?? settings.taxRatePercent ?? 0;
+  const gstRatePercent = toPercent(draft.taxRate) ?? settings.gstRatePercent ?? settings.taxRatePercent ?? 15;
   const pricesIncludeTax = settings.pricesIncludeTax ?? false;
-  const totals = buildTotals(draft.items, taxFree, taxRatePercent, pricesIncludeTax);
+  const totals = calculateTotals(draft.items, {
+    taxFree,
+    pricesIncludeTax,
+    gstRatePercent,
+  });
 
   const payments =
     Array.isArray(draft.payments) && draft.payments.length > 0

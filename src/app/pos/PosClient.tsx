@@ -25,11 +25,17 @@ type Modifier = {
   action: 'add' | 'remove';
 };
 
+type PricingConfig = {
+  pricesIncludeTax: boolean;
+  gstRatePercent: number;
+};
+
 type PosClientProps = {
   categories: Category[];
   products: Product[];
   modifiers: Modifier[];
   currentUser?: SessionUser | null;
+  pricing: PricingConfig;
 };
 
 const CATEGORY_DETAILS: Record<string, { title: string; icon: string }> = {
@@ -295,6 +301,7 @@ export default function PosClient({
   categories: initialCategories,
   products: initialProducts,
   currentUser,
+  pricing,
 }: PosClientProps) {
   const router = useRouter();
   const normalizedProducts = useMemo(
@@ -358,9 +365,10 @@ export default function PosClient({
     () => cart.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0),
     [cart],
   );
-  const taxCents = 0;
 
-  const { discountCents, discountedSubtotalCents, totalCents } = useMemo(() => {
+  const ratePercent = pricing.gstRatePercent ?? 15;
+
+  const { discountCents, discountedSubtotalCents, taxCents, totalCents } = useMemo(() => {
     let computedDiscountCents = 0;
 
     if (discountMode !== 'NONE' && discountInput.trim() !== '') {
@@ -379,14 +387,28 @@ export default function PosClient({
     }
 
     const discountedSubtotal = subtotalCents - computedDiscountCents;
-    const total = discountedSubtotal + taxCents;
+
+    if (pricing.pricesIncludeTax) {
+      const subtotalExTax = Math.round(discountedSubtotal / (1 + ratePercent / 100));
+      const computedTaxCents = discountedSubtotal - subtotalExTax;
+      return {
+        discountCents: computedDiscountCents,
+        discountedSubtotalCents: subtotalExTax,
+        taxCents: computedTaxCents,
+        totalCents: discountedSubtotal,
+      };
+    }
+
+    const computedTaxCents = Math.round(discountedSubtotal * (ratePercent / 100));
+    const total = discountedSubtotal + computedTaxCents;
 
     return {
       discountCents: computedDiscountCents,
       discountedSubtotalCents: discountedSubtotal,
+      taxCents: computedTaxCents,
       totalCents: total,
     };
-  }, [discountInput, discountMode, subtotalCents, taxCents]);
+  }, [discountInput, discountMode, pricing.pricesIncludeTax, ratePercent, subtotalCents]);
 
   const { givenCents, changeCents } = useMemo(() => {
     let computedGiven: number | undefined;
