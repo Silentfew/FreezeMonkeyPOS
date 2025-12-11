@@ -15,6 +15,11 @@ export async function readModifiers(): Promise<Modifier[]> {
   return Array.isArray(modifiers) ? modifiers : [];
 }
 
+export async function saveModifiers(modifiers: Modifier[]): Promise<void> {
+  const { writeJSON } = await import('@/infra/fs/jsonStore');
+  await writeJSON(MODIFIERS_FILE, modifiers);
+}
+
 export function toggleModifier(selected: Modifier[], modifier: Modifier): Modifier[] {
   const exists = selected.find((item) => item.id === modifier.id);
   if (exists) {
@@ -40,4 +45,33 @@ export function modifierLabel(modifier: Modifier): string {
     return 'remove';
   }
   return 'no charge';
+}
+
+export async function addModifier(
+  newModifier: Modifier
+): Promise<Modifier[]> {
+  const modifiers = await readModifiers();
+  const updated = [...modifiers, newModifier];
+  await saveModifiers(updated);
+  return updated;
+}
+
+export async function updateModifier(
+  updated: Modifier
+): Promise<Modifier[]> {
+  const modifiers = await readModifiers();
+  const newList = modifiers.map((m) =>
+    m.id === updated.id ? { ...m, ...updated } : m
+  );
+  await saveModifiers(newList);
+  return newList;
+}
+
+export async function deleteModifier(
+  id: string | number
+): Promise<Modifier[]> {
+  const modifiers = await readModifiers();
+  const updated = modifiers.filter((m) => m.id !== id);
+  await saveModifiers(updated);
+  return updated;
 }
