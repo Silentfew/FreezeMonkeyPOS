@@ -22,7 +22,7 @@ function normalizeSettings(settings: Partial<Settings>): Settings {
 }
 
 function toSessionUser(pinUser: PinUser): SessionUser {
-  return { name: pinUser.name, role: pinUser.role };
+  return { name: pinUser.name, role: pinUser.role, userId: pinUser.pin };
 }
 
 export async function POST(request: Request) {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const sessionUser: SessionUser | null = matchedUser
     ? toSessionUser(matchedUser)
     : providedPin === (process.env.POS_LOGIN_PIN ?? DEFAULT_PIN)
-      ? { name: "Owner", role: "OWNER" }
+      ? { name: "Owner", role: "OWNER", userId: providedPin || "owner" }
       : null;
 
   if (!sessionUser) {

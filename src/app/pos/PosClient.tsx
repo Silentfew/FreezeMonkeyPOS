@@ -587,7 +587,7 @@ export default function PosClient({
     setIsLoggingOut(true);
     setStatusMessage('Logging out...');
     try {
-      const response = await fetch('/api/logout', { method: 'POST' });
+      const response = await fetch('/api/session', { method: 'DELETE' });
       if (!response.ok) {
         throw new Error('Failed to logout');
       }
