@@ -1,7 +1,8 @@
 {
   "currency": "USD",
-  "taxRate": 0.15,
-  "taxInclusive": false,
+  "taxRatePercent": 15,
+  "pricesIncludeTax": true,
+  "kitchenPrepMinutes": 7,
   "pins": [],
   "kitchen": {
     "defaultMinutes": 7,

@@ -40,6 +40,10 @@ export async function PUT(request: Request) {
     updatedSettings = normalizeSettings({ ...updatedSettings, kitchen: payload.kitchen });
   }
 
+  if (typeof payload?.kitchenPrepMinutes === 'number') {
+    updatedSettings = normalizeSettings({ ...updatedSettings, kitchenPrepMinutes: payload.kitchenPrepMinutes });
+  }
+
   const mergedSettings = normalizeSettings({ ...currentSettings, ...updatedSettings });
   await saveSettings(mergedSettings);
 

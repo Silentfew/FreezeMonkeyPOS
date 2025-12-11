@@ -84,10 +84,42 @@ export function calculateItemTotal(item: OrderItem): number {
 export function calculateTotals(
   items: OrderItem[],
   taxFree: boolean,
-  taxRate = 0.15,
+  taxRatePercent = 15,
+  pricesIncludeTax = false,
 ): Totals {
-  const subtotal = items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-  const tax = taxFree ? 0 : subtotal * taxRate;
-  const total = subtotal + tax;
-  return { subtotal, tax, total };
+  const lineTotalsCents = items.reduce(
+    (sum, item) => sum + Math.round(calculateItemTotal(item) * 100),
+    0,
+  );
+
+  if (taxFree || !taxRatePercent || taxRatePercent <= 0) {
+    return {
+      subtotal: lineTotalsCents / 100,
+      tax: 0,
+      total: lineTotalsCents / 100,
+    };
+  }
+
+  const rate = taxRatePercent / 100;
+
+  if (pricesIncludeTax) {
+    const totalCents = lineTotalsCents;
+    const subtotalCents = Math.round(totalCents / (1 + rate));
+    const taxCents = totalCents - subtotalCents;
+    return {
+      subtotal: subtotalCents / 100,
+      tax: taxCents / 100,
+      total: totalCents / 100,
+    };
+  }
+
+  const subtotalCents = lineTotalsCents;
+  const taxCents = Math.round(subtotalCents * rate);
+  const totalCents = subtotalCents + taxCents;
+
+  return {
+    subtotal: subtotalCents / 100,
+    tax: taxCents / 100,
+    total: totalCents / 100,
+  };
 }

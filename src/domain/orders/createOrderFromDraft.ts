@@ -42,8 +42,18 @@ function buildItems(items: DraftOrderItem[]): OrderItem[] {
   }));
 }
 
-function buildTotals(items: DraftOrderItem[], taxFree: boolean, taxRate?: number): OrderTotals {
-  return calculateTotals(items, taxFree, taxRate ?? 0.15);
+function toPercent(taxRate?: number): number | undefined {
+  if (typeof taxRate !== 'number') return undefined;
+  return taxRate > 1 ? taxRate : taxRate * 100;
+}
+
+function buildTotals(
+  items: DraftOrderItem[],
+  taxFree: boolean,
+  taxRatePercent: number,
+  pricesIncludeTax: boolean,
+): OrderTotals {
+  return calculateTotals(items, taxFree, taxRatePercent, pricesIncludeTax);
 }
 
 export async function createOrderFromDraft(
@@ -53,7 +63,10 @@ export async function createOrderFromDraft(
   const taxFree = draft.taxFree ?? false;
   const createdAt = context.createdAt ?? new Date().toISOString();
   const items = buildItems(draft.items);
-  const totals = buildTotals(draft.items, taxFree, draft.taxRate);
+  const settings = await loadSettings();
+  const taxRatePercent = toPercent(draft.taxRate) ?? settings.taxRatePercent ?? 0;
+  const pricesIncludeTax = settings.pricesIncludeTax ?? false;
+  const totals = buildTotals(draft.items, taxFree, taxRatePercent, pricesIncludeTax);
 
   const payments =
     Array.isArray(draft.payments) && draft.payments.length > 0
@@ -79,8 +92,6 @@ export async function createOrderFromDraft(
       ? draft.discountCents
       : undefined;
 
-  const settings = await loadSettings();
-
   const orderBase: Order = {
     orderNumber: context.orderNumber,
     createdAt,
@@ -95,14 +106,16 @@ export async function createOrderFromDraft(
     kitchenStatus: 'OPEN',
   };
 
-  const estimatedPrepMinutes = getKitchenEstimateMinutes(orderBase, settings);
+  const kitchenPrepMinutes = Math.min(Math.max(settings.kitchenPrepMinutes ?? 7, 1), 60);
+  const estimatedPrepMinutes = kitchenPrepMinutes || getKitchenEstimateMinutes(orderBase, settings);
 
   const targetReadyAtDate = new Date(createdAt);
-  targetReadyAtDate.setTime(targetReadyAtDate.getTime() + estimatedPrepMinutes * 60_000);
+  targetReadyAtDate.setTime(targetReadyAtDate.getTime() + kitchenPrepMinutes * 60_000);
 
   return {
     ...orderBase,
     estimatedPrepMinutes,
     targetReadyAt: targetReadyAtDate.toISOString(),
+    kitchenDueAt: targetReadyAtDate.toISOString(),
   };
 }

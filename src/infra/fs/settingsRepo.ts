@@ -5,8 +5,9 @@ const SETTINGS_FILE = 'settings.json';
 
 export const DEFAULT_SETTINGS: Settings = {
   currency: 'USD',
-  taxRate: 0,
-  taxInclusive: false,
+  taxRatePercent: 0,
+  pricesIncludeTax: false,
+  kitchenPrepMinutes: 7,
   pins: [],
   kitchen: {
     defaultMinutes: 7,
@@ -101,10 +102,38 @@ function normalizeKitchenSettings(kitchen?: KitchenSettings): KitchenSettings {
 }
 
 export function normalizeSettings(settings: Partial<Settings>): Settings {
+  const taxRatePercent = (() => {
+    if (typeof settings.taxRatePercent === 'number') return settings.taxRatePercent;
+    if (typeof (settings as { taxRate?: number })?.taxRate === 'number') {
+      const legacyRate = (settings as { taxRate?: number }).taxRate!;
+      return legacyRate > 1 ? legacyRate : legacyRate * 100;
+    }
+    return DEFAULT_SETTINGS.taxRatePercent;
+  })();
+
+  const pricesIncludeTax = (() => {
+    if (typeof settings.pricesIncludeTax === 'boolean') return settings.pricesIncludeTax;
+    if (typeof (settings as { taxInclusive?: boolean }).taxInclusive === 'boolean') {
+      return Boolean((settings as { taxInclusive?: boolean }).taxInclusive);
+    }
+    return DEFAULT_SETTINGS.pricesIncludeTax;
+  })();
+
+  const kitchenPrepMinutes = (() => {
+    const minutes = Number(settings.kitchenPrepMinutes ?? DEFAULT_SETTINGS.kitchenPrepMinutes);
+    if (Number.isFinite(minutes) && minutes >= 1) {
+      return Math.min(minutes, 60);
+    }
+    return DEFAULT_SETTINGS.kitchenPrepMinutes;
+  })();
+
   const kitchenSource = settings.kitchen ?? DEFAULT_SETTINGS.kitchen;
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
+    taxRatePercent,
+    pricesIncludeTax,
+    kitchenPrepMinutes,
     pins: normalizePins(settings.pins),
     kitchen: normalizeKitchenSettings(kitchenSource),
   };

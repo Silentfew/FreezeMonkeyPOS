@@ -25,6 +25,7 @@ const DEFAULT_KITCHEN: KitchenSettings = {
 
 export default function KitchenSettingsPage() {
   const [kitchen, setKitchen] = useState<KitchenSettings>(DEFAULT_KITCHEN);
+  const [prepMinutes, setPrepMinutes] = useState<number>(7);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -38,6 +39,7 @@ export default function KitchenSettingsPage() {
         const data = await response.json();
         const loadedSettings: Settings | null = data?.settings ?? null;
         setKitchen(loadedSettings?.kitchen ?? DEFAULT_KITCHEN);
+        setPrepMinutes(loadedSettings?.kitchenPrepMinutes ?? 7);
       } catch (error) {
         console.error('Failed to load settings', error);
         setStatus({ type: 'error', message: 'Unable to load kitchen settings' });
@@ -83,7 +85,10 @@ export default function KitchenSettingsPage() {
         minutes: kitchenMap.get(categoryId) ?? kitchen.defaultMinutes ?? 0,
       }));
 
-      const payload = { kitchen: { ...kitchen, categories: fullCategories } };
+      const payload = {
+        kitchen: { ...kitchen, categories: fullCategories },
+        kitchenPrepMinutes: Math.min(Math.max(Math.round(prepMinutes) || 1, 1), 60),
+      };
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -97,6 +102,7 @@ export default function KitchenSettingsPage() {
       const data = await response.json();
       const updatedSettings: Settings | null = data?.settings ?? null;
       setKitchen(updatedSettings?.kitchen ?? kitchen);
+      setPrepMinutes(updatedSettings?.kitchenPrepMinutes ?? prepMinutes);
       setStatus({ type: 'success', message: 'Kitchen times updated' });
     } catch (error) {
       console.error(error);
@@ -141,6 +147,24 @@ export default function KitchenSettingsPage() {
         )}
 
         <div className="overflow-hidden rounded-2xl bg-white/5 shadow-lg ring-1 ring-white/10">
+          <div className="grid gap-6 border-b border-white/10 bg-white/5 p-6 sm:grid-cols-2 sm:items-center">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Global prep time</p>
+              <p className="text-lg font-semibold text-white">Kitchen prep time (minutes)</p>
+              <p className="text-sm text-white/70">Used for new orders and the kitchen queue countdown.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={prepMinutes}
+                onChange={(event) => setPrepMinutes(Math.max(1, Math.min(60, Number(event.target.value) || 1)))}
+                className="w-32 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-lg text-white outline-none ring-0 focus:border-[#00C2FF]/60"
+              />
+              <span className="text-sm text-white/60">minutes</span>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-white/10 text-sm">
               <thead className="bg-white/5 text-left text-xs uppercase tracking-wide text-white/60">

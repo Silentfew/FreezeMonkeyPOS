@@ -13,6 +13,23 @@ function getEstimateMinutes(order: KitchenOrder) {
   return order.kitchenEstimateMinutes ?? order.estimatedPrepMinutes ?? 7;
 }
 
+function getDueTimestamp(order: KitchenOrder): number | null {
+  if (order.kitchenDueAt) {
+    const parsed = new Date(order.kitchenDueAt).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  if (order.targetReadyAt) {
+    const parsed = new Date(order.targetReadyAt).getTime();
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  const estimateMinutes = getEstimateMinutes(order);
+  const created = new Date(order.createdAt).getTime();
+  if (Number.isNaN(created)) return null;
+  return created + estimateMinutes * 60_000;
+}
+
 function buildItemLabel(item: OrderItem) {
   const modifierText = item.modifiers?.length
     ? ` (${item.modifiers.map((modifier) => modifier.name).join(', ')})`
@@ -26,11 +43,8 @@ function formatTime(timestamp: string) {
 }
 
 function computeTime(order: KitchenOrder, nowMs: number) {
-  const estimateMinutes = getEstimateMinutes(order);
-
-  const diffSeconds = order.targetReadyAt
-    ? Math.round((new Date(order.targetReadyAt).getTime() - nowMs) / 1000)
-    : Math.round((new Date(order.createdAt).getTime() + estimateMinutes * 60_000 - nowMs) / 1000);
+  const due = getDueTimestamp(order);
+  const diffSeconds = due ? Math.round((due - nowMs) / 1000) : -1;
 
   const isOverdue = diffSeconds < 0;
   const remainingSeconds = Math.max(diffSeconds, 0);
@@ -73,13 +87,24 @@ export default function KitchenClient() {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<Date | null>(null);
+  const [clock, setClock] = useState<string>('');
 
   useEffect(() => {
-    setNow(new Date());
+    const updateNow = () => {
+      const current = new Date();
+      setNow(current);
+      setClock(
+        current.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+      );
+    };
 
-    const id = setInterval(() => {
-      setNow(new Date());
-    }, 1000);
+    updateNow();
+
+    const id = setInterval(updateNow, 1000);
 
     return () => clearInterval(id);
   }, []);
@@ -117,8 +142,8 @@ export default function KitchenClient() {
   const sortedOrders = useMemo(
     () =>
       [...orders].sort((a, b) => {
-        const timeA = getSortTimestamp(a);
-        const timeB = getSortTimestamp(b);
+        const timeA = getDueTimestamp(a) ?? getSortTimestamp(a);
+        const timeB = getDueTimestamp(b) ?? getSortTimestamp(b);
         if (timeA !== timeB) return timeA - timeB;
 
         const ticketA = typeof a.ticketNumber === 'number' ? a.ticketNumber : Number.MAX_SAFE_INTEGER;
@@ -129,6 +154,15 @@ export default function KitchenClient() {
   );
 
   const nowMs = now?.getTime() ?? Date.now();
+  const visibleOrders = useMemo(
+    () =>
+      sortedOrders.filter((order) => {
+        const due = getDueTimestamp(order);
+        if (!due) return false;
+        return due > nowMs;
+      }),
+    [sortedOrders, nowMs],
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 px-6 py-8 text-white">
@@ -139,15 +173,7 @@ export default function KitchenClient() {
           <p className="text-sm text-white/60">Auto-refreshes every 5 seconds</p>
         </div>
         <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-white/70 ring-1 ring-white/10">
-          <div suppressHydrationWarning>
-            {now
-              ? now.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })
-              : ''}
-          </div>
+          <div suppressHydrationWarning>{clock || '--:--:--'}</div>
         </div>
       </header>
 
@@ -155,13 +181,13 @@ export default function KitchenClient() {
         <div className="flex h-[70vh] items-center justify-center text-2xl text-white/60">
           Loading orders…
         </div>
-      ) : sortedOrders.length === 0 ? (
+      ) : visibleOrders.length === 0 ? (
         <div className="flex h-[70vh] items-center justify-center text-3xl font-semibold text-white/60">
           Waiting for orders…
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {sortedOrders.map((order) => {
+          {visibleOrders.map((order) => {
             const countdown = formatCountdown(order, nowMs);
             const estimateMinutes = getEstimateMinutes(order);
 
