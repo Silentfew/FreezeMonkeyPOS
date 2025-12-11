@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Order } from '@/domain/models/order';
+import { Order, OrderStatus, RefundInfo } from '@/domain/models/order';
 import { createOrderFromDraft, OrderDraft } from '@/domain/orders/createOrderFromDraft';
 import { readJSON, writeJSON } from './jsonStore';
 
@@ -146,6 +146,41 @@ export async function getOrderByOrderNumber(orderNumber: string): Promise<Order 
   }
 
   return null;
+}
+
+export async function updateOrderStatus(
+  date: string,
+  orderNumber: string,
+  status: OrderStatus,
+  refundInfo?: RefundInfo,
+): Promise<Order | null> {
+  const orders = await readDailyOrders(date);
+  const index = orders.findIndex((order) => order.orderNumber === orderNumber);
+
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedOrder: Order = {
+    ...orders[index],
+    status,
+  };
+
+  if (status === 'REFUNDED') {
+    updatedOrder.refund = refundInfo ?? {
+      method: 'OTHER',
+      refundedAt: new Date().toISOString(),
+    };
+  } else {
+    delete updatedOrder.refund;
+  }
+
+  const updatedOrders = [...orders];
+  updatedOrders[index] = updatedOrder;
+
+  await writeDailyOrders(date, updatedOrders);
+
+  return updatedOrder;
 }
 
 export async function markKitchenOrderCompleted(orderNumber: string): Promise<Order | null> {

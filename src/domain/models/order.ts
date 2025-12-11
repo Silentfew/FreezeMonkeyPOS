@@ -2,6 +2,8 @@ import { Modifier } from '@/lib/modifier_manager';
 
 export type PaymentType = 'CASH' | 'CARD' | 'OTHER';
 
+export type OrderStatus = 'PAID' | 'CANCELLED' | 'REFUNDED';
+
 export interface Payment {
   type: PaymentType | string;
   amountCents: number;
@@ -19,6 +21,13 @@ export interface OrderItem {
   lineTotal: number;
 }
 
+export interface RefundInfo {
+  refundedAt: string;
+  method: PaymentType;
+  reason?: string;
+  refundedBy?: string;
+}
+
 export interface OrderTotals {
   subtotal: number;
   tax: number;
@@ -33,7 +42,7 @@ export interface Order {
   items: OrderItem[];
   totals: OrderTotals;
   taxFree: boolean;
-  status?: string;
+  status?: OrderStatus;
   note?: string;
   payments?: Payment[];
   discountCents?: number;
@@ -42,4 +51,9 @@ export interface Order {
   estimatedPrepMinutes?: number;
   targetReadyAt?: string;
   kitchenCompletedAt?: string;
+  refund?: RefundInfo;
+}
+
+export function isOrderTaxable(order: Order): boolean {
+  return order.status !== 'REFUNDED' && order.status !== 'CANCELLED';
 }

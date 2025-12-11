@@ -87,6 +87,7 @@ export async function createOrderFromDraft(
     items,
     totals,
     taxFree,
+    status: 'PAID',
     note: draft.note,
     payments,
     discountCents,

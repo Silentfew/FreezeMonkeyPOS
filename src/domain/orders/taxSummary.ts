@@ -1,4 +1,5 @@
 import type { Order } from '../models/order';
+import { isOrderTaxable } from '../models/order';
 
 export interface TaxSummary {
   orderCount: number;
@@ -27,7 +28,7 @@ function toCents(value: number | undefined): number {
 
 export function getTaxSummary(orders: Order[]): TaxSummary {
   const summary: TaxSummary = {
-    orderCount: orders.length,
+    orderCount: 0,
     totalTaxableCents: 0,
     totalTaxCents: 0,
     totalGrossCents: 0,
@@ -38,7 +39,8 @@ export function getTaxSummary(orders: Order[]): TaxSummary {
     },
   };
 
-  orders.forEach((order) => {
+  orders.filter(isOrderTaxable).forEach((order) => {
+    summary.orderCount += 1;
     const subtotal = toCents(order.totals?.subtotal ?? 0);
     const tax = toCents(order.totals?.tax ?? 0);
     summary.totalTaxableCents += subtotal;

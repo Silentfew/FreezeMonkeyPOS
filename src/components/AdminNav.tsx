@@ -8,6 +8,7 @@ const links = [
   { href: '/admin/kitchen', label: 'Kitchen Times' },
   { href: '/admin/staff', label: 'Staff' },
   { href: '/admin/reports/tax-weekly', label: 'Weekly Tax' },
+  { href: '/admin/reports/orders', label: 'Orders / Refunds' },
   { href: '/admin/reports/daily-closeout', label: 'Daily Closeout' },
 ];
 
