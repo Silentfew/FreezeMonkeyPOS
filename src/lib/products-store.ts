@@ -24,6 +24,11 @@ export async function loadAllProducts(): Promise<Product[]> {
   return normalizeProducts(await readJSON<Product[]>(PRODUCTS_FILE, []));
 }
 
+export async function saveProducts(products: Product[]): Promise<void> {
+  const { writeJSON } = await import('@/infra/fs/jsonStore');
+  await writeJSON(PRODUCTS_FILE, products);
+}
+
 export async function readProducts(): Promise<Product[]> {
   const products = await loadAllProducts();
   return products.filter((product) => product.active !== false);
@@ -45,4 +50,30 @@ export async function fetchProducts(categoryId?: string): Promise<Product[]> {
         .filter((product) => product.active !== false)
     : [];
   return products;
+}
+
+export async function addProduct(newProduct: Product): Promise<Product[]> {
+  const products = await readProducts();
+  const updated = [...products, newProduct];
+  await saveProducts(updated);
+  return updated;
+}
+
+export async function updateProduct(
+  id: string | number,
+  patch: Partial<Product>
+): Promise<Product[]> {
+  const products = await readProducts();
+  const updated = products.map((product) =>
+    product.id === id ? { ...product, ...patch } : product
+  );
+  await saveProducts(updated);
+  return updated;
+}
+
+export async function deleteProduct(id: string | number): Promise<Product[]> {
+  const products = await readProducts();
+  const updated = products.filter((product) => product.id !== id);
+  await saveProducts(updated);
+  return updated;
 }
