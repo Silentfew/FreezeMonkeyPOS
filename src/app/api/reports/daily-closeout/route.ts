@@ -29,7 +29,8 @@ function buildBaseSummary(date: string, orders: Order[]): DailyCloseoutSummary {
       acc.taxableSalesCents += subtotal;
       acc.gstCents += tax;
       acc.totalInclTaxCents += subtotal + tax;
-      acc.orderCount += 1;
+      // Safely handle possibly-undefined orderCount for TypeScript
+      acc.orderCount = (acc.orderCount ?? 0) + 1;
       acc.discountCentsTotal += typeof order.discountCents === 'number' ? order.discountCents : 0;
 
       const payments = Array.isArray((order as Order).payments)
