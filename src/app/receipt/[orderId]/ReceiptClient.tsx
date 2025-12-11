@@ -6,10 +6,9 @@ import { Order } from '@/domain/models/order';
 interface ReceiptClientProps {
   order: Order;
   autoPrint?: boolean;
-  pricing: { pricesIncludeTax: boolean; gstRatePercent: number };
 }
 
-export default function ReceiptClient({ order, autoPrint, pricing }: ReceiptClientProps) {
+export default function ReceiptClient({ order, autoPrint }: ReceiptClientProps) {
   useEffect(() => {
     if (!autoPrint) return;
     const timer = setTimeout(() => {
@@ -24,9 +23,6 @@ export default function ReceiptClient({ order, autoPrint, pricing }: ReceiptClie
   const ticketLabel = order.ticketNumber ?? order.orderNumber;
   const payments = Array.isArray(order.payments) ? order.payments : [];
   const totalPaidCents = payments.reduce((sum, payment) => sum + (payment.amountCents ?? 0), 0);
-  const gstNote = pricing.pricesIncludeTax
-    ? `* All prices include ${pricing.gstRatePercent.toFixed(0)}% GST`
-    : null;
 
   return (
     <div className="receipt-root">
@@ -55,19 +51,11 @@ export default function ReceiptClient({ order, autoPrint, pricing }: ReceiptClie
         <div className="divider" />
 
         <div className="totals">
-          <div className="total-row">
-            <span>Subtotal (excl. GST)</span>
-            <span>${order.totals.subtotal.toFixed(2)}</span>
-          </div>
-          <div className="total-row">
-            <span>GST</span>
-            <span>${order.totals.tax.toFixed(2)}</span>
-          </div>
           <div className="total-row total-row--bold">
-            <span>Total (incl. GST)</span>
+            <span>Total</span>
             <span>${order.totals.total.toFixed(2)}</span>
           </div>
-          {gstNote ? <div className="totals-note">{gstNote}</div> : null}
+          <div className="totals-note">Currently operating in Non-GST mode (sole trader).</div>
         </div>
 
         {payments.length > 0 ? (

@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from 'react';
-import type { TaxSummary } from '@/domain/orders/taxSummary';
+import type { IncomeSummary } from '@/domain/orders/taxSummary';
 import { AdminHeader } from '@/components/AdminHeader';
 
 interface ReportResponse {
   range: { startDate: string; endDate: string };
-  summary: TaxSummary;
+  summary: IncomeSummary;
 }
 
 function formatDateInput(date: Date): string {
@@ -80,15 +80,15 @@ export default function WeeklyTaxReportPage() {
     if (!report) return;
     const { summary } = report;
     const csv = [
-      'startDate,endDate,orderCount,taxable,tax,gross,cash,card,other',
-      `${weekStart},${weekEnd},${summary.orderCount},${formatDollars(summary.totalTaxableCents)},${formatDollars(summary.totalTaxCents)},${formatDollars(summary.totalGrossCents)},${formatDollars(summary.byPaymentType.CASH)},${formatDollars(summary.byPaymentType.CARD)},${formatDollars(summary.byPaymentType.OTHER)}`,
+      'startDate,endDate,orderCount,totalSales,cash,card,other,discounts',
+      `${weekStart},${weekEnd},${summary.orderCount},${formatDollars(summary.totalSalesCents)},${formatDollars(summary.payments.cashCents)},${formatDollars(summary.payments.cardCents)},${formatDollars(summary.payments.otherCents)},${formatDollars(summary.discountCents ?? 0)}`,
     ].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `weekly-tax-${weekStart}-to-${weekEnd}.csv`;
+    link.download = `weekly-income-${weekStart}-to-${weekEnd}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -100,11 +100,9 @@ export default function WeeklyTaxReportPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin · Reports</p>
-            <h1 className="text-3xl font-black text-[#E9F9FF]">Weekly Tax Report</h1>
-            <p className="text-sm text-white/70">Review GST totals for any seven-day window.</p>
-            <p className="mt-1 text-xs text-white/60">
-              IRD return: GST payable = GST total. Taxable sales (excl. GST) feeds into the GST return box for total sales.
-            </p>
+            <h1 className="text-3xl font-black text-[#E9F9FF]">Weekly Income Summary (Non-GST)</h1>
+            <p className="text-sm text-white/70">Review gross takings for any seven-day window.</p>
+            <p className="mt-1 text-xs text-white/60">Note: You are not GST registered. This report reflects gross income before expenses.</p>
           </div>
         </div>
 
@@ -164,24 +162,22 @@ export default function WeeklyTaxReportPage() {
         {report && (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3 rounded-2xl bg-white/5 p-5 shadow-lg ring-1 ring-white/10">
-              <h2 className="text-xl font-black text-[#E9F9FF]">Totals</h2>
+              <h2 className="text-xl font-black text-[#E9F9FF]">Income</h2>
               <div className="space-y-2 text-lg">
-                <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
-                  <span className="text-white/70">Taxable sales (excl. GST)</span>
-                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.totalTaxableCents)}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
-                  <span className="text-white/70">GST</span>
-                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.totalTaxCents)}</span>
-                </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/30 px-4 py-3 ring-1 ring-white/10">
-                  <span className="text-white">Total incl. GST</span>
-                  <span className="text-2xl font-black text-[#00C2FF]">${formatDollars(report.summary.totalGrossCents)}</span>
+                  <span className="text-white">Total sales (gross)</span>
+                  <span className="text-2xl font-black text-[#00C2FF]">${formatDollars(report.summary.totalSalesCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3 text-base">
                   <span className="text-white/70">Orders</span>
                   <span className="font-black text-white">{report.summary.orderCount}</span>
                 </div>
+                {typeof report.summary.discountCents === 'number' && (
+                  <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3 text-base">
+                    <span className="text-white/70">Discounts applied</span>
+                    <span className="font-black text-white">${formatDollars(report.summary.discountCents)}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -190,15 +186,15 @@ export default function WeeklyTaxReportPage() {
               <div className="space-y-2 text-lg">
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
                   <span className="text-white/70">Cash</span>
-                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.byPaymentType.CASH)}</span>
+                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.payments.cashCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
                   <span className="text-white/70">Card</span>
-                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.byPaymentType.CARD)}</span>
+                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.payments.cardCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
                   <span className="text-white/70">Other</span>
-                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.byPaymentType.OTHER)}</span>
+                  <span className="font-black text-[#FFE561]">${formatDollars(report.summary.payments.otherCents)}</span>
                 </div>
               </div>
             </div>
@@ -207,7 +203,7 @@ export default function WeeklyTaxReportPage() {
 
         {!report && !error && (
           <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-5 py-10 text-center text-white/70">
-            Load a week to view its tax summary.
+            Load a week to view its income summary.
           </div>
         )}
       </div>

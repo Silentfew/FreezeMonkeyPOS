@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTaxSummary } from '@/domain/orders/taxSummary';
+import { calculateIncomeSummary } from '@/domain/orders/taxSummary';
 import { getOrdersBetween } from '@/infra/fs/ordersRepo';
 
 function isValidDateString(value: string | null): value is string {
@@ -21,14 +21,14 @@ export async function GET(request: Request) {
 
   try {
     const orders = await getOrdersBetween(startDateParam, endDateParam);
-    const summary = getTaxSummary(orders);
+    const summary = calculateIncomeSummary(orders, startDateParam, endDateParam);
 
     return NextResponse.json({
       range: { startDate: startDateParam, endDate: endDateParam },
       summary,
     });
   } catch (error) {
-    console.error('Failed to build weekly tax report', error);
-    return NextResponse.json({ error: 'Failed to build weekly tax report' }, { status: 500 });
+    console.error('Failed to build weekly income summary', error);
+    return NextResponse.json({ error: 'Failed to build weekly income summary' }, { status: 500 });
   }
 }
