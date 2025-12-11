@@ -16,9 +16,13 @@ export interface KitchenSettings {
 
 export interface Settings {
   currency: string;
-  taxRatePercent: number;
   pricesIncludeTax: boolean;
+  gstRatePercent: number;
   kitchenPrepMinutes?: number;
   pins: PinUser[];
   kitchen?: KitchenSettings;
+  /**
+   * @deprecated Use gstRatePercent instead. Maintained for backward compatibility with older payloads.
+   */
+  taxRatePercent?: number;
 }

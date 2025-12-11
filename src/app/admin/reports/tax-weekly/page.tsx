@@ -102,6 +102,9 @@ export default function WeeklyTaxReportPage() {
             <p className="text-xs uppercase tracking-[0.2em] text-[#E9F9FF]/60">Admin · Reports</p>
             <h1 className="text-3xl font-black text-[#E9F9FF]">Weekly Tax Report</h1>
             <p className="text-sm text-white/70">Review GST totals for any seven-day window.</p>
+            <p className="mt-1 text-xs text-white/60">
+              IRD return: GST payable = GST total. Taxable sales (excl. GST) feeds into the GST return box for total sales.
+            </p>
           </div>
         </div>
 
@@ -164,15 +167,15 @@ export default function WeeklyTaxReportPage() {
               <h2 className="text-xl font-black text-[#E9F9FF]">Totals</h2>
               <div className="space-y-2 text-lg">
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
-                  <span className="text-white/70">Taxable sales</span>
+                  <span className="text-white/70">Taxable sales (excl. GST)</span>
                   <span className="font-black text-[#FFE561]">${formatDollars(report.summary.totalTaxableCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3">
-                  <span className="text-white/70">Earthrealm Tax (GST)</span>
+                  <span className="text-white/70">GST</span>
                   <span className="font-black text-[#FFE561]">${formatDollars(report.summary.totalTaxCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/30 px-4 py-3 ring-1 ring-white/10">
-                  <span className="text-white">Total incl. tax</span>
+                  <span className="text-white">Total incl. GST</span>
                   <span className="text-2xl font-black text-[#00C2FF]">${formatDollars(report.summary.totalGrossCents)}</span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3 text-base">
