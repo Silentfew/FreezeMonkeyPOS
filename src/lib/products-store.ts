@@ -52,11 +52,29 @@ export async function fetchProducts(categoryId?: string): Promise<Product[]> {
   return products;
 }
 
-export async function addProduct(newProduct: Product): Promise<Product[]> {
+export async function addProduct(
+  payload: Omit<Product, 'id'>
+): Promise<Product> {
   const products = await readProducts();
+
+  const nextId =
+    products.length > 0
+      ? Math.max(
+          ...products
+            .map((p) => Number(p.id))
+            .filter((n) => !Number.isNaN(n))
+        ) + 1
+      : 1;
+
+  const newProduct: Product = {
+    ...payload,
+    id: nextId,
+  };
+
   const updated = [...products, newProduct];
+
   await saveProducts(updated);
-  return updated;
+  return newProduct;
 }
 
 export async function updateProduct(
