@@ -48,12 +48,28 @@ export function modifierLabel(modifier: Modifier): string {
 }
 
 export async function addModifier(
-  newModifier: Modifier
-): Promise<Modifier[]> {
+  payload: Omit<Modifier, "id">
+): Promise<Modifier> {
   const modifiers = await readModifiers();
+
+  const nextId =
+    modifiers.length > 0
+      ? Math.max(
+          ...modifiers
+            .map((m) => Number(m.id))
+            .filter((n) => !Number.isNaN(n))
+        ) + 1
+      : 1;
+
+  const newModifier: Modifier = {
+    ...payload,
+    id: nextId,
+  };
+
   const updated = [...modifiers, newModifier];
+
   await saveModifiers(updated);
-  return updated;
+  return newModifier;
 }
 
 export async function updateModifier(
