@@ -16,8 +16,9 @@ export interface KitchenSettings {
 
 export interface Settings {
   currency: string;
-  taxRate: number;
-  taxInclusive: boolean;
+  taxRatePercent: number;
+  pricesIncludeTax: boolean;
+  kitchenPrepMinutes?: number;
   pins: PinUser[];
   kitchen?: KitchenSettings;
 }

@@ -8,8 +8,9 @@ const SETTINGS_FILE = "settings.json";
 
 const DEFAULT_SETTINGS: Settings = {
   currency: "USD",
-  taxRate: 0,
-  taxInclusive: false,
+  taxRatePercent: 0,
+  pricesIncludeTax: false,
+  kitchenPrepMinutes: 7,
   pins: [],
 };
 

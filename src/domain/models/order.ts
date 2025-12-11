@@ -39,6 +39,7 @@ export type KitchenStatus = 'OPEN' | 'DONE';
 export interface Order {
   orderNumber: string;
   createdAt: string;
+  kitchenDueAt?: string;
   items: OrderItem[];
   totals: OrderTotals;
   taxFree: boolean;
