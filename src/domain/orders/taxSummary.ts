@@ -50,16 +50,15 @@ export function calculateIncomeSummary(orders: Order[], fromDate: string, toDate
       summary.discountCents = (summary.discountCents ?? 0) + order.discountCents;
     }
 
-    const payments = Array.isArray((order as unknown as { payments?: PaymentLike[] }).payments)
-      ? (order as unknown as { payments?: PaymentLike[] }).payments
+    const payments: PaymentLike[] = Array.isArray((order as Order).payments)
+      ? ((order as Order).payments as PaymentLike[])
       : [];
 
     payments.forEach((payment) => {
       const type = (payment.type?.toUpperCase() as PaymentType) ?? 'OTHER';
       const key: PaymentType = type === 'CASH' || type === 'CARD' ? type : 'OTHER';
-      const amount = typeof payment.amountCents === 'number'
-        ? payment.amountCents
-        : toCents(payment.amount);
+      const amount = typeof payment.amountCents === 'number' ? payment.amountCents : 0;
+
       if (key === 'CASH') summary.payments.cashCents += amount;
       if (key === 'CARD') summary.payments.cardCents += amount;
       if (key === 'OTHER') summary.payments.otherCents += amount;
