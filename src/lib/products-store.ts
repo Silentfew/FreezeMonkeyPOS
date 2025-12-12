@@ -68,7 +68,7 @@ export async function addProduct(
 
   const newProduct: Product = {
     ...payload,
-    id: nextId,
+    id: String(nextId),
   };
 
   const updated = [...products, newProduct];
